@@ -203,7 +203,7 @@
       resultSpinner.classList.add("active");
 
       // Replace this with your actual API endpoint
-      const apiBase = "https://10.70.9.33:8000";
+      const apiBase = "https://w.aditya.ac.in/omrapi";
       const formData = new FormData();
       formData.append("file", file);
 
@@ -284,7 +284,7 @@
       }));
 
       try {
-        const submitUrl = "https://10.70.9.33:8000/save_results";
+        const submitUrl = "https://w.aditya.ac.in/omrapi/save_results";
         const res = await fetch(submitUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -314,5 +314,6 @@
 </body>
 
 </html>
+
 
 
