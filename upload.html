@@ -162,6 +162,7 @@
             <tr>
               <th>Question</th>
               <th>Answer(s)</th>
+              <th>Accuracy</th>
             </tr>
           </thead>
           <tbody>
@@ -186,12 +187,7 @@
 
     let sucCode = localStorage.getItem("sucCode") || "1332";
     let examID = localStorage.getItem("examId") || "eq133";
-
-    let currentData = [
-      { question: "Q1", answers: ["A"] },
-      { question: "Q2", answers: [] },
-      { question: "Q3", answers: ["C"] }
-    ];
+    let currentData = [];
 
     cameraBtn.addEventListener("click", () => fileInput.click());
 
@@ -205,36 +201,66 @@
       const file = fileInput.files[0];
       if (!file) return alert("Please capture or upload an image first!");
 
-      // Show spinner
       resultSpinner.classList.add("active");
 
-      // MOCK API CALL for GitHub Pages
-      setTimeout(() => {
-        // Mock processed image
-        resultImg.src = "https://via.placeholder.com/300x260?text=Processed&t=" + new Date().getTime();
+      // Replace this fetch URL with your actual backend endpoint
+      const apiBase = "http://10.70.9.208:8000";
+      const apiUrl = `${apiBase}/process/${sucCode}/${examID}`;
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const response = await fetch(apiUrl, { method: "POST", body: formData });
+        if (!response.ok) throw new Error("Upload failed!");
+        const data = await response.json();
+
+        // Update localStorage
+        sucCode = data.suc || sucCode;
+        examID = data.examID || examID;
+        localStorage.setItem("sucCode", sucCode);
+        localStorage.setItem("examId", examID);
+
+        // Update processed image
+        let imgUrl = data.image_url.startsWith("http") ? data.image_url : apiBase + data.image_url;
+        resultImg.src = imgUrl + "?t=" + new Date().getTime();
+
+        // Update exam info
         examInfo.innerText = `SUC Code: ${sucCode} | Exam ID: ${examID}`;
 
-        // Render table
-        renderTable(currentData, false);
+        // Store results
+        currentData = data.result.map(item => ({
+          question: item.question,
+          answers: item.answers,
+          accuracy: item.accuracy
+        }));
 
+        renderTable(currentData, false);
         editBtn.disabled = false;
+
+      } catch (err) {
+        console.error(err);
+        alert("Failed to process image: " + err.message);
+      } finally {
         resultSpinner.classList.remove("active");
-      }, 1000);
+      }
     });
 
     function renderTable(data, editableMode) {
       resultTableBody.innerHTML = "";
       data.forEach(item => {
         const row = document.createElement("tr");
+
+        // Question
         const qCell = document.createElement("td");
         qCell.innerText = item.question;
         row.appendChild(qCell);
 
+        // Answer
         const aCell = document.createElement("td");
         if (editableMode) {
           const input = document.createElement("input");
           input.type = "text";
-          input.value = item.answers.length ? item.answers.join(", ") : "";
+          input.value = item.answers.join(", ");
           input.className = "form-control text-center";
           input.dataset.question = item.question;
           aCell.appendChild(input);
@@ -243,26 +269,37 @@
           aCell.className = item.answers.length ? "text-success" : "text-danger";
         }
         row.appendChild(aCell);
+
+        // Accuracy
+        const accCell = document.createElement("td");
+        accCell.innerText = item.accuracy !== undefined ? (item.accuracy * 100).toFixed(2) + "%" : "-";
+        row.appendChild(accCell);
+
         resultTableBody.appendChild(row);
       });
     }
 
+    // Edit button
     editBtn.addEventListener("click", () => {
       renderTable(currentData, true);
       editBtn.disabled = true;
       submitBtn.disabled = false;
     });
 
-    submitBtn.addEventListener("click", () => {
+    // Submit button
+    submitBtn.addEventListener("click", async () => {
       const inputs = document.querySelectorAll("#resultTable input");
       currentData = Array.from(inputs).map(input => ({
         question: input.dataset.question,
-        answers: input.value ? [input.value.trim()] : []
+        answers: input.value ? [input.value.trim()] : [],
+        accuracy: undefined
       }));
+
       renderTable(currentData, false);
       editBtn.disabled = false;
       submitBtn.disabled = true;
-      alert("Answers updated (mock).");
+
+      alert("Answers updated successfully!");
     });
   </script>
 </body>
