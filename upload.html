@@ -150,9 +150,11 @@
         renderTable(currentData, false); // render in "view" mode
 
         editBtn.disabled = false; // enable edit button
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
+      }  catch (err) {
+  console.error("Upload failed:", err); // full object in console
+  alert("Error: " + (err.message || JSON.stringify(err)));
+}
+
     });
 
     // Render table
@@ -239,3 +241,4 @@
 
 
 </html>
+
