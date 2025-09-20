@@ -5,10 +5,6 @@
   <meta charset="UTF-8">
   <title>OMR Sheet Processor</title>
 
-  <!-- Bootstrap -->
-  <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" /> -->
-
   <!-- AngularJS + QR Scanner -->
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
@@ -19,27 +15,16 @@
     href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i"
     rel="stylesheet">
 
-  <!-- Vendor CSS Files -->
-  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-  <link href="assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
-  <link href="assets/vendor/quill/quill.snow.css" rel="stylesheet">
-  <link href="assets/vendor/quill/quill.bubble.css" rel="stylesheet">
-  <link href="assets/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link href="assets/vendor/simple-datatables/style.css" rel="stylesheet">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
-  <!-- Template Main CSS File -->
-  <link href="assets/css/style.css" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   <style>
     body {
-      /* background: #f4f6f9; */
       font-family: "Nunito", sans-serif;
-    }
-
-    h2 {
-      font-weight: 700;
+      background: #f4f6f9;
     }
 
     .card-custom {
@@ -52,10 +37,11 @@
     .preview-img,
     .result-img {
       width: 100%;
-      border-radius: 12px;
-      border: 2px dashed #ced4da;
-      background: #fafafa;
+      height: 260px;
+      border-radius: 8px;
+      border: 2px dashed #ebeef4;
       object-fit: contain;
+      transition: all 0.3s ease;
     }
 
     #cameraBtn,
@@ -64,39 +50,13 @@
       font-weight: 600;
     }
 
-    #resultTable {
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
     #resultTable th {
       text-transform: uppercase;
       font-size: 0.85rem;
-      letter-spacing: 0.5px;
-    }
-
-    .panel {
-      margin-bottom: 20px;
-    }
-
-
-
-    @media (max-width: 768px) {
-      .panel {
-        min-height: auto;
-        margin-bottom: 20px;
-      }
-    }
-
-    #resultTable {
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: var(--shadow-sm);
     }
 
     #resultTable thead th {
       background: #f6f6fe;
-      color: var(--text-primary);
       font-family: "Nunito", sans-serif;
       font-size: 13px;
       font-weight: 600;
@@ -108,40 +68,29 @@
 
     #resultTable tbody td {
       padding: 12px;
-      border-color: var(--border-color);
-      vertical-align: middle;
       font-size: 14px;
+      vertical-align: middle;
     }
 
     #resultTable tbody tr:hover {
       background: #f6f9ff;
     }
 
-    .preview-img,
-    .result-img {
-      width: 100%;
-      border-radius: 8px;
-      border: 2px dashed #ebeef4;
-      /* background: #f6f6fe; */
-      object-fit: contain;
-      height: 260px;
-      transition: all 0.3s ease;
+    #resultSpinner {
+      display: none;
+      margin: 10px auto;
     }
 
-  
+    #resultSpinner.active {
+      display: inline-block;
+    }
   </style>
-
 </head>
 
-
-<body class="bg-light">
-
+<body>
   <div class="container py-4">
-    <div class="text-center mb-4 pagetitle ">
-      <h1>
-        <!-- <i class="bi bi-file-earmark-text-fill text-secondary"></i> -->
-        OMR Sheet Processor
-      </h1>
+    <div class="text-center mb-4 pagetitle">
+      <h1>OMR Sheet Processor</h1>
     </div>
 
     <!-- Upload / Camera Section -->
@@ -152,16 +101,19 @@
         <button type="button" id="cameraBtn" class="btn btn-outline-success w-100 mb-2">
           <i class="bi bi-camera me-2 fs-5"></i> Open Camera
         </button>
-        <div class="d-flex align-items-center my-1 ">
-          <hr class="flex-grow-1  " style="color:#9fa4a5bf ;">
-          <span class="mx-2  small" style="color: #767d80bf;">OR</span>
-          <hr class="flex-grow-1 " style="color:#9fa4a5bf ;">
+        <div class="d-flex align-items-center my-1">
+          <hr class="flex-grow-1" style="color:#9fa4a5bf;">
+          <span class="mx-2 small" style="color: #767d80bf;">OR</span>
+          <hr class="flex-grow-1" style="color:#9fa4a5bf;">
         </div>
 
         <button type="submit" class="btn btn-outline-primary w-100">
-          <i class="bi bi-upload me-2 "></i> Upload & Process
+          <i class="bi bi-upload me-2"></i> Upload & Process
         </button>
       </form>
+      <div id="resultSpinner" class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
     </div>
 
     <!-- Preview and Processed Result -->
@@ -169,15 +121,16 @@
       <div class="col-md-6 panel">
         <div class="card card-custom p-3 text-center">
           <h6 class="text-start mb-3 card-title mt-0">Preview</h6>
-          <img id="preview" class="preview-img" src="assets/img/preview.png"
-            alt="Preview will appear here" style="height: 260px;">
+          <img id="preview" class="preview-img" src="https://via.placeholder.com/300x260?text=Preview"
+            alt="Preview will appear here">
         </div>
       </div>
 
       <div class="col-md-6 panel">
         <div class="card card-custom p-3 text-center">
           <h6 class="text-start mb-3 card-title mt-0">Processed Result</h6>
-          <img id="resultImg" class="result-img" src="assets/img/preview.png" alt="Processed image will appear here" style="height: 260px;">
+          <img id="resultImg" class="result-img" src="https://via.placeholder.com/300x260?text=Processed"
+            alt="Processed image will appear here">
         </div>
       </div>
     </div>
@@ -190,33 +143,32 @@
 
     <!-- JSON Table -->
     <div class="card card-custom p-4 mt-4">
-      <h6 class="text-start mb-3 card-title mt-0">Detected Answers</h5>
+      <h6 class="text-start mb-3 card-title mt-0">Detected Answers</h6>
 
-        <!-- Action buttons -->
-        <div class="d-flex justify-content-center mb-3 flex-wrap gap-3">
-          <button id="editBtn" class="btn btn-outline-primary d-flex align-items-center px-4 py-1 small" disabled>
-            <i class="bi bi-pencil-square me-2"></i> Edit
-          </button>
+      <!-- Action buttons -->
+      <div class="d-flex justify-content-center mb-3 flex-wrap gap-3">
+        <button id="editBtn" class="btn btn-outline-primary d-flex align-items-center px-4 py-1 small" disabled>
+          <i class="bi bi-pencil-square me-2"></i> Edit
+        </button>
 
-          <button id="submitBtn" class="btn btn-outline-success d-flex align-items-center px-4 py-1 small" disabled>
-            <i class="bi bi-check-circle me-2"></i> Submit
-          </button>
-        </div>
+        <button id="submitBtn" class="btn btn-outline-success d-flex align-items-center px-4 py-1 small" disabled>
+          <i class="bi bi-check-circle me-2"></i> Submit
+        </button>
+      </div>
 
-
-        <div class="table-responsive">
-          <table class="table table-hover align-middle" id="resultTable">
-            <thead>
-              <tr>
-                <th>Question</th>
-                <th>Answer(s)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Rows will be inserted dynamically -->
-            </tbody>
-          </table>
-        </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle" id="resultTable">
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th>Answer(s)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rows will be inserted dynamically -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -232,19 +184,14 @@
     const editBtn = document.getElementById("editBtn");
     const submitBtn = document.getElementById("submitBtn");
 
-    // Get sucCode and examID from localStorage
     let sucCode = localStorage.getItem("sucCode") || "1332";
     let examID = localStorage.getItem("examId") || "eq133";
 
-    if (!sucCode || !examID) {
-      alert("SUC Code or Exam ID not found. Please scan QR code first!");
-      // take default vales
-      sucCode = "12334"
-      examID = "exw1234"
-    }
-
-    let currentData = []; // store processed answers
-    let editable = false; // track edit mode
+    let currentData = [
+      { question: "Q1", answers: ["A"] },
+      { question: "Q2", answers: [] },
+      { question: "Q3", answers: ["C"] }
+    ];
 
     cameraBtn.addEventListener("click", () => fileInput.click());
 
@@ -255,132 +202,67 @@
 
     uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-
       const file = fileInput.files[0];
       if (!file) return alert("Please capture or upload an image first!");
 
-      const formData = new FormData();
-      formData.append("file", file);
+      // Show spinner
+      resultSpinner.classList.add("active");
 
-      const apiBase = "http://10.70.9.208:8000";
-      const apiUrl = `${apiBase}/process/${sucCode}/${examID}`;
-
-      try {
-        // Show spinner
-        resultSpinner.classList.add("active");
-
-        const response = await fetch(apiUrl, { method: "POST", body: formData });
-        if (!response.ok) throw new Error("Upload failed!");
-        const data = await response.json();
-
-        // Update localStorage (optional, in case backend modifies them)
-        sucCode = data.suc || sucCode;
-        examID = data.examID || examID;
-        localStorage.setItem("sucCode", sucCode);
-        localStorage.setItem("examId", examID);
-
-        // Processed image URL handling
-        let imgUrl = data.image_url;
-        if (!imgUrl.startsWith("http")) {
-          imgUrl = apiBase+"/" + imgUrl;
-        }
-        // Add cache-busting query param
-        resultImg.src = imgUrl + "?t=" + new Date().getTime();
-        console.log("Final Processed Image URL:", resultImg.src);
-
+      // MOCK API CALL for GitHub Pages
+      setTimeout(() => {
+        // Mock processed image
+        resultImg.src = "https://via.placeholder.com/300x260?text=Processed&t=" + new Date().getTime();
         examInfo.innerText = `SUC Code: ${sucCode} | Exam ID: ${examID}`;
 
-        currentData = data.result; // store for later edits
-        renderTable(currentData, false); // render in "view" mode
+        // Render table
+        renderTable(currentData, false);
 
-        editBtn.disabled = false; // enable edit button
-      } catch (err) {
-        console.error("Upload failed:", err);
-        alert("Error: " + (err.message || JSON.stringify(err)));
-      } finally {
-        // Hide spinner
+        editBtn.disabled = false;
         resultSpinner.classList.remove("active");
-      }
+      }, 1000);
     });
 
-    // Render table
     function renderTable(data, editableMode) {
       resultTableBody.innerHTML = "";
       data.forEach(item => {
         const row = document.createElement("tr");
-
-        // Question cell
         const qCell = document.createElement("td");
         qCell.innerText = item.question;
         row.appendChild(qCell);
 
-        // Answer cell
         const aCell = document.createElement("td");
-
         if (editableMode) {
           const input = document.createElement("input");
           input.type = "text";
-          input.value = item.answers.length > 0 ? item.answers.join(", ") : "";
+          input.value = item.answers.length ? item.answers.join(", ") : "";
           input.className = "form-control text-center";
           input.dataset.question = item.question;
           aCell.appendChild(input);
         } else {
-          aCell.innerText = item.answers.length > 0 ? item.answers.join(", ") : "Not Answered";
-          aCell.className = item.answers.length > 0 ? "text-success" : "text-danger";
+          aCell.innerText = item.answers.length ? item.answers.join(", ") : "Not Answered";
+          aCell.className = item.answers.length ? "text-success" : "text-danger";
         }
-
         row.appendChild(aCell);
         resultTableBody.appendChild(row);
       });
     }
 
-    // Edit button → switch to edit mode
     editBtn.addEventListener("click", () => {
-      editable = true;
       renderTable(currentData, true);
       editBtn.disabled = true;
       submitBtn.disabled = false;
     });
 
-    // Submit button → collect inputs & send to backend
-    submitBtn.addEventListener("click", async () => {
+    submitBtn.addEventListener("click", () => {
       const inputs = document.querySelectorAll("#resultTable input");
-      const updatedAnswers = [];
-
-      inputs.forEach(input => {
-        updatedAnswers.push({
-          question: input.dataset.question,
-          answer: input.value.trim()
-        });
-      });
-
-      try {
-        const submitUrl = `http://10.70.9.208:8000/save_results`;
-        const res = await fetch(submitUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            suc: sucCode,
-            examID: examID,
-            answers: updatedAnswers
-          })
-        });
-
-        if (!res.ok) throw new Error("Failed to submit updates");
-        alert("Answers updated successfully!");
-
-        // update currentData and re-render in view mode
-        currentData = updatedAnswers.map(item => ({
-          question: item.question,
-          answers: item.answer ? [item.answer] : []
-        }));
-        renderTable(currentData, false);
-
-        editBtn.disabled = false;
-        submitBtn.disabled = true;
-      } catch (err) {
-        alert("Update failed: " + err.message);
-      }
+      currentData = Array.from(inputs).map(input => ({
+        question: input.dataset.question,
+        answers: input.value ? [input.value.trim()] : []
+      }));
+      renderTable(currentData, false);
+      editBtn.disabled = false;
+      submitBtn.disabled = true;
+      alert("Answers updated (mock).");
     });
   </script>
 </body>
