@@ -208,7 +208,7 @@
       formData.append("file", file);
 
       try {
-        const res = await fetch(`${apiBase}/process/${sucCode || "default"}/${examID || "default"}`, {
+        const res = await fetch(`${apiBase}/process/${sucCode || "12346"}/${examID || "ew123"}`, {
           method: "POST",
           body: formData
         });
@@ -314,3 +314,4 @@
 </body>
 
 </html>
+
