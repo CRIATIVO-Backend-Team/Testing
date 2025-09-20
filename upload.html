@@ -4,91 +4,219 @@
 <head>
   <meta charset="UTF-8">
   <title>OMR Sheet Processor</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Bootstrap -->
+  <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" /> -->
+
+  <!-- AngularJS + QR Scanner -->
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.gstatic.com" rel="preconnect">
+  <link
+    href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i"
+    rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
+  <link href="assets/vendor/quill/quill.snow.css" rel="stylesheet">
+  <link href="assets/vendor/quill/quill.bubble.css" rel="stylesheet">
+  <link href="assets/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <link href="assets/vendor/simple-datatables/style.css" rel="stylesheet">
+
+  <!-- Template Main CSS File -->
+  <link href="assets/css/style.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
   <style>
+    body {
+      /* background: #f4f6f9; */
+      font-family: "Nunito", sans-serif;
+    }
+
+    h2 {
+      font-weight: 700;
+    }
+
+    .card-custom {
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      background: #fff;
+    }
+
     .preview-img,
     .result-img {
       width: 100%;
-      height: auto;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 5px;
+      border-radius: 12px;
+      border: 2px dashed #ced4da;
+      background: #fafafa;
+      object-fit: contain;
+    }
+
+    #cameraBtn,
+    #uploadForm button {
+      border-radius: 30px;
+      font-weight: 600;
+    }
+
+    #resultTable {
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    #resultTable th {
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
     }
 
     .panel {
-      min-height: 400px;
+      margin-bottom: 20px;
     }
 
-    #fileInput {
-      display: none;
+
+
+    @media (max-width: 768px) {
+      .panel {
+        min-height: auto;
+        margin-bottom: 20px;
+      }
     }
+
+    #resultTable {
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    #resultTable thead th {
+      background: #f6f6fe;
+      color: var(--text-primary);
+      font-family: "Nunito", sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 12px;
+      border: none;
+    }
+
+    #resultTable tbody td {
+      padding: 12px;
+      border-color: var(--border-color);
+      vertical-align: middle;
+      font-size: 14px;
+    }
+
+    #resultTable tbody tr:hover {
+      background: #f6f9ff;
+    }
+
+    .preview-img,
+    .result-img {
+      width: 100%;
+      border-radius: 8px;
+      border: 2px dashed #ebeef4;
+      /* background: #f6f6fe; */
+      object-fit: contain;
+      height: 260px;
+      transition: all 0.3s ease;
+    }
+
+  
   </style>
+
 </head>
+
 
 <body class="bg-light">
 
-  <div class="container-fluid py-4">
-    <h2 class="text-center mb-4 text-primary">OMR Sheet</h2>
+  <div class="container py-4">
+    <div class="text-center mb-4 pagetitle ">
+      <h1>
+        <!-- <i class="bi bi-file-earmark-text-fill text-secondary"></i> -->
+        OMR Sheet Processor
+      </h1>
+    </div>
 
     <!-- Upload / Camera Section -->
-    <div class="d-flex justify-content-center align-items-center" style="min-height: 15vh;">
-      <div style="width: 100%; max-width: 400px;">
-        <h5 class="text-center mb-3">Upload Key Sheet</h5>
-        <form id="uploadForm">
-          <input type="file" id="fileInput" accept="image/*" capture="environment" required>
-          <button type="button" id="cameraBtn" class="btn btn-success w-100 mb-2">📷 Open Camera</button>
-          <button type="submit" class="btn btn-primary w-100">Upload & Process</button>
-        </form>
-      </div>
+    <div class="card card-body mb-4">
+      <h6 class="text-start mb-3 card-title mt-0 b-3">Upload Key Sheet</h6>
+      <form id="uploadForm">
+        <input type="file" id="fileInput" accept="image/*" capture="environment" required hidden>
+        <button type="button" id="cameraBtn" class="btn btn-outline-success w-100 mb-2">
+          <i class="bi bi-camera me-2 fs-5"></i> Open Camera
+        </button>
+        <div class="d-flex align-items-center my-1 ">
+          <hr class="flex-grow-1  " style="color:#9fa4a5bf ;">
+          <span class="mx-2  small" style="color: #767d80bf;">OR</span>
+          <hr class="flex-grow-1 " style="color:#9fa4a5bf ;">
+        </div>
+
+        <button type="submit" class="btn btn-outline-primary w-100">
+          <i class="bi bi-upload me-2 "></i> Upload & Process
+        </button>
+      </form>
     </div>
 
     <!-- Preview and Processed Result -->
-    <div class="row">
-      <div class="col-md-6 panel text-center">
-        <h6>Preview:</h6>
-        <img id="preview" class="preview-img"
-          src="https://dummyimage.com/300x300/cccccc/000000.png&text=Preview"
-          alt="Preview will appear here" style="height: 300px; object-fit: contain; width: 100%;">
+    <div class="row g-3">
+      <div class="col-md-6 panel">
+        <div class="card card-custom p-3 text-center">
+          <h6 class="text-start mb-3 card-title mt-0">Preview</h6>
+          <img id="preview" class="preview-img" src="assets/img/preview.png"
+            alt="Preview will appear here" style="height: 260px;">
+        </div>
       </div>
 
-      <div class="col-md-6 panel text-center">
-        <h5>Processed Result</h5>
-        <img id="resultImg" class="result-img" src="" alt="Processed image will appear here"
-          style="height: 300px; object-fit: contain; width: 100%;">
+      <div class="col-md-6 panel">
+        <div class="card card-custom p-3 text-center">
+          <h6 class="text-start mb-3 card-title mt-0">Processed Result</h6>
+          <img id="resultImg" class="result-img" src="assets/img/preview.png" alt="Processed image will appear here" style="height: 260px;">
+        </div>
       </div>
     </div>
 
     <!-- Exam Info -->
-    <div class="row mt-4">
-      <div class="col-md-8 offset-md-2 text-center">
-        <h6 class="fw-bold text-secondary">Exam Info</h6>
-        <p id="examInfo" class="text-muted"></p>
-      </div>
+    <div class="card card-custom p-3 mt-4 text-center">
+      <h6 class="text-start mb-3 card-title mt-0">Exam Info</h6>
+      <p id="examInfo" class="text-muted small"></p>
     </div>
 
-    <!-- Bottom Section: JSON Table -->
-    <div class="row mt-4">
-      <div class="col-md-10 offset-md-1 text-center">
-        <h5>Detected Answers</h5>
+    <!-- JSON Table -->
+    <div class="card card-custom p-4 mt-4">
+      <h6 class="text-start mb-3 card-title mt-0">Detected Answers</h5>
 
         <!-- Action buttons -->
-        <div class="mb-3">
-          <button id="editBtn" class="btn btn-warning me-2" disabled>✏️ Edit</button>
-          <button id="submitBtn" class="btn btn-success" disabled>✅ Submit Changes</button>
+        <div class="d-flex justify-content-center mb-3 flex-wrap gap-3">
+          <button id="editBtn" class="btn btn-outline-primary d-flex align-items-center px-4 py-1 small" disabled>
+            <i class="bi bi-pencil-square me-2"></i> Edit
+          </button>
+
+          <button id="submitBtn" class="btn btn-outline-success d-flex align-items-center px-4 py-1 small" disabled>
+            <i class="bi bi-check-circle me-2"></i> Submit
+          </button>
         </div>
 
-        <table class="table table-bordered table-striped" id="resultTable">
-          <thead class="table-dark">
-            <tr>
-              <th>Question</th>
-              <th>Answer(s)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Rows will be inserted dynamically -->
-          </tbody>
-        </table>
-      </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle" id="resultTable">
+            <thead>
+              <tr>
+                <th>Question</th>
+                <th>Answer(s)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rows will be inserted dynamically -->
+            </tbody>
+          </table>
+        </div>
     </div>
   </div>
 
@@ -98,14 +226,22 @@
     const cameraBtn = document.getElementById("cameraBtn");
     const preview = document.getElementById("preview");
     const resultImg = document.getElementById("resultImg");
+    const resultSpinner = document.getElementById("resultSpinner");
     const resultTableBody = document.querySelector("#resultTable tbody");
     const examInfo = document.getElementById("examInfo");
     const editBtn = document.getElementById("editBtn");
     const submitBtn = document.getElementById("submitBtn");
 
     // Get sucCode and examID from localStorage
-    let sucCode = localStorage.getItem("sucCode");
-    let examID = localStorage.getItem("examId");
+    let sucCode = localStorage.getItem("sucCode") || "1332";
+    let examID = localStorage.getItem("examId") || "eq133";
+
+    if (!sucCode || !examID) {
+      alert("SUC Code or Exam ID not found. Please scan QR code first!");
+      // take default vales
+      sucCode = "12334"
+      examID = "exw1234"
+    }
 
     let currentData = []; // store processed answers
     let editable = false; // track edit mode
@@ -126,39 +262,44 @@
       const formData = new FormData();
       formData.append("file", file);
 
-      const apiUrl = `http://10.70.9.208:8000/process/${sucCode}/${examID}`;
+      const apiBase = "http://10.70.9.208:8000";
+      const apiUrl = `${apiBase}/process/${sucCode}/${examID}`;
 
       try {
+        // Show spinner
+        resultSpinner.classList.add("active");
+
         const response = await fetch(apiUrl, { method: "POST", body: formData });
         if (!response.ok) throw new Error("Upload failed!");
         const data = await response.json();
 
-        // Update localStorage
+        // Update localStorage (optional, in case backend modifies them)
         sucCode = data.suc || sucCode;
         examID = data.examID || examID;
         localStorage.setItem("sucCode", sucCode);
         localStorage.setItem("examId", examID);
 
-        // Build the image URL for display
+        // Processed image URL handling
         let imgUrl = data.image_url;
-        console.log(imgUrl)
         if (!imgUrl.startsWith("http")) {
-          imgUrl = "http://10.70.9.208:8000" + imgUrl;
+          imgUrl = apiBase+"/" + imgUrl;
         }
-
-        console.log(imgUrl)
-        // Add timestamp to prevent caching
+        // Add cache-busting query param
         resultImg.src = imgUrl + "?t=" + new Date().getTime();
-        console.log("Processed Image URL:", resultImg.src);
+        console.log("Final Processed Image URL:", resultImg.src);
 
         examInfo.innerText = `SUC Code: ${sucCode} | Exam ID: ${examID}`;
 
-        currentData = data.result;
-        renderTable(currentData, false);
+        currentData = data.result; // store for later edits
+        renderTable(currentData, false); // render in "view" mode
 
-        editBtn.disabled = false;
+        editBtn.disabled = false; // enable edit button
       } catch (err) {
-        alert("Error: " + err.message);
+        console.error("Upload failed:", err);
+        alert("Error: " + (err.message || JSON.stringify(err)));
+      } finally {
+        // Hide spinner
+        resultSpinner.classList.remove("active");
       }
     });
 
@@ -168,11 +309,14 @@
       data.forEach(item => {
         const row = document.createElement("tr");
 
+        // Question cell
         const qCell = document.createElement("td");
         qCell.innerText = item.question;
         row.appendChild(qCell);
 
+        // Answer cell
         const aCell = document.createElement("td");
+
         if (editableMode) {
           const input = document.createElement("input");
           input.type = "text";
@@ -184,8 +328,8 @@
           aCell.innerText = item.answers.length > 0 ? item.answers.join(", ") : "Not Answered";
           aCell.className = item.answers.length > 0 ? "text-success" : "text-danger";
         }
-        row.appendChild(aCell);
 
+        row.appendChild(aCell);
         resultTableBody.appendChild(row);
       });
     }
@@ -225,6 +369,7 @@
         if (!res.ok) throw new Error("Failed to submit updates");
         alert("Answers updated successfully!");
 
+        // update currentData and re-render in view mode
         currentData = updatedAnswers.map(item => ({
           question: item.question,
           answers: item.answer ? [item.answer] : []
