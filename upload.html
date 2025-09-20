@@ -106,10 +106,6 @@
     let sucCode = localStorage.getItem("sucCode");
     let examID = localStorage.getItem("examId");
 
-    if (!sucCode || !examID) {
-      alert("SUC Code or Exam ID not found. Please scan QR code first!");
-      window.location.href = "scan.html"; // redirect to your scanner page
-    }
 
     let currentData = []; // store processed answers
     let editable = false; // track edit mode
@@ -143,27 +139,16 @@
         localStorage.setItem("sucCode", sucCode);
         localStorage.setItem("examId", examID);
 
-        let imgUrl = data.image_url;
-
-        // if backend only returns a relative path, prepend ngrok base URL
-        if (!imgUrl.startsWith("http")) {
-          imgUrl = "https://0e74bbcb1da7.ngrok-free.app" + imgUrl;
-        }
-        
-        console.log("Final Processed Image URL:", imgUrl);
-        resultImg.src = imgUrl;
-
+        resultImg.src = "https://0e74bbcb1da7.ngrok-free.app" + data.image_url;
         examInfo.innerText = `SUC Code: ${sucCode} | Exam ID: ${examID}`;
 
         currentData = data.result; // store for later edits
         renderTable(currentData, false); // render in "view" mode
 
         editBtn.disabled = false; // enable edit button
-      }  catch (err) {
-  console.error("Upload failed:", err); // full object in console
-  alert("Error: " + (err.message || JSON.stringify(err)));
-}
-
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
     });
 
     // Render table
@@ -248,7 +233,4 @@
   </script>
 </body>
 
-
 </html>
-
-
