@@ -143,7 +143,16 @@
         localStorage.setItem("sucCode", sucCode);
         localStorage.setItem("examId", examID);
 
-        resultImg.src = "https://0e74bbcb1da7.ngrok-free.app" + data.image_url;
+        let imgUrl = data.image_url;
+
+        // if backend only returns a relative path, prepend ngrok base URL
+        if (!imgUrl.startsWith("http")) {
+          imgUrl = "https://0e74bbcb1da7.ngrok-free.app" + imgUrl;
+        }
+        
+        console.log("Final Processed Image URL:", imgUrl);
+        resultImg.src = imgUrl;
+
         examInfo.innerText = `SUC Code: ${sucCode} | Exam ID: ${examID}`;
 
         currentData = data.result; // store for later edits
@@ -241,4 +250,5 @@
 
 
 </html>
+
 
