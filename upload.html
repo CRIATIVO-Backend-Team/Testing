@@ -130,7 +130,7 @@
       const formData = new FormData();
       formData.append("file", file);
 
-      const apiUrl = `http://10.70.9.208:8000/process/${sucCode}/${examID}`;
+      const apiUrl = `https://0e74bbcb1da7.ngrok-free.app/process/${sucCode}/${examID}`;
 
       try {
         const response = await fetch(apiUrl, { method: "POST", body: formData });
@@ -143,7 +143,7 @@
         localStorage.setItem("sucCode", sucCode);
         localStorage.setItem("examId", examID);
 
-        resultImg.src = "http://10.70.9.208:8000" + data.image_url;
+        resultImg.src = "https://0e74bbcb1da7.ngrok-free.app" + data.image_url;
         examInfo.innerText = `SUC Code: ${sucCode} | Exam ID: ${examID}`;
 
         currentData = data.result; // store for later edits
@@ -207,7 +207,7 @@
       });
 
       try {
-        const submitUrl = `http://10.70.9.208:8000/save_results`;
+        const submitUrl = `https://0e74bbcb1da7.ngrok-free.app/save_results`;
         const res = await fetch(submitUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -236,5 +236,6 @@
     });
   </script>
 </body>
+
 
 </html>
