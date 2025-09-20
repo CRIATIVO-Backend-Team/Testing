@@ -87,8 +87,8 @@
       $scope.errorMessage = null;
       let qrScanner = null;
 
-      // Start QR Scanner
-      $scope.startQrScanner = function () {
+      // Function to start QR scanner
+      $scope.startQrScanner = function (facingMode = "environment") {
         $scope.errorMessage = null;
 
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -100,12 +100,10 @@
         $scope.scannerVisible = true;
         $scope.scannedCode = null;
 
-        if (!qrScanner) {
-          qrScanner = new Html5Qrcode("qr-reader");
-        }
+        if (!qrScanner) qrScanner = new Html5Qrcode("qr-reader");
 
         qrScanner.start(
-          { facingMode: { exact: "environment" } },
+          { facingMode: facingMode },
           { fps: 10, qrbox: 250 },
           function (decodedText) {
             $scope.$apply(() => {
@@ -120,10 +118,16 @@
           }
         ).catch(err => {
           console.error("Camera start failed", err);
-          $scope.$apply(() => {
-            $scope.errorMessage = "Unable to access camera.";
-            $scope.scannerVisible = false;
-          });
+          // fallback to front camera if rear not found
+          if (facingMode === "environment") {
+            console.log("Trying front camera...");
+            $scope.startQrScanner("user");
+          } else {
+            $scope.$apply(() => {
+              $scope.errorMessage = "Unable to access camera.";
+              $scope.scannerVisible = false;
+            });
+          }
         });
       };
 
@@ -140,25 +144,20 @@
       $scope.nextStep = function () {
         if ($scope.examId && $scope.examId.trim() !== '') {
           localStorage.setItem("examId", $scope.examId.trim());
-
           let suc = localStorage.getItem("sucCode");
           let exam = localStorage.getItem("examId");
-
           alert("SUC Code: " + suc + "\nExam ID: " + exam);
-
           window.location.href = "upload.html";
-
         } else {
           alert("Please enter Exam ID.");
         }
       };
 
-      // Auto-start QR Scanner after page load
+      // Auto-start QR Scanner on load
       $timeout(() => {
         $scope.startQrScanner();
       }, 500);
     });
   </script>
-
 </body>
 </html>
