@@ -46,7 +46,8 @@
     <div class="row">
       <div class="col-md-6 panel text-center">
         <h6>Preview:</h6>
-        <img id="preview" class="preview-img" src="https://dummyimage.com/300x300/cccccc/000000.png&text=Preview"
+        <img id="preview" class="preview-img"
+          src="https://dummyimage.com/300x300/cccccc/000000.png&text=Preview"
           alt="Preview will appear here" style="height: 300px; object-fit: contain; width: 100%;">
       </div>
 
@@ -106,7 +107,6 @@
     let sucCode = localStorage.getItem("sucCode");
     let examID = localStorage.getItem("examId");
 
-
     let currentData = []; // store processed answers
     let editable = false; // track edit mode
 
@@ -126,26 +126,37 @@
       const formData = new FormData();
       formData.append("file", file);
 
-      const apiUrl = `https://776abe79dfab.ngrok-free.app/process/${sucCode}/${examID}`;
+      const apiUrl = `http://10.70.9.208:8000/process/${sucCode}/${examID}`;
 
       try {
         const response = await fetch(apiUrl, { method: "POST", body: formData });
         if (!response.ok) throw new Error("Upload failed!");
         const data = await response.json();
 
-        // Update localStorage (optional, in case backend modifies them)
+        // Update localStorage
         sucCode = data.suc || sucCode;
         examID = data.examID || examID;
         localStorage.setItem("sucCode", sucCode);
         localStorage.setItem("examId", examID);
 
-        resultImg.src = "https://776abe79dfab.ngrok-free.app" + data.image_url;
+        // Build the image URL for display
+        let imgUrl = data.image_url;
+        console.log(imgUrl)
+        if (!imgUrl.startsWith("http")) {
+          imgUrl = "http://10.70.9.208:8000" + imgUrl;
+        }
+
+        console.log(imgUrl)
+        // Add timestamp to prevent caching
+        resultImg.src = imgUrl + "?t=" + new Date().getTime();
+        console.log("Processed Image URL:", resultImg.src);
+
         examInfo.innerText = `SUC Code: ${sucCode} | Exam ID: ${examID}`;
 
-        currentData = data.result; // store for later edits
-        renderTable(currentData, false); // render in "view" mode
+        currentData = data.result;
+        renderTable(currentData, false);
 
-        editBtn.disabled = false; // enable edit button
+        editBtn.disabled = false;
       } catch (err) {
         alert("Error: " + err.message);
       }
@@ -157,14 +168,11 @@
       data.forEach(item => {
         const row = document.createElement("tr");
 
-        // Question cell
         const qCell = document.createElement("td");
         qCell.innerText = item.question;
         row.appendChild(qCell);
 
-        // Answer cell
         const aCell = document.createElement("td");
-
         if (editableMode) {
           const input = document.createElement("input");
           input.type = "text";
@@ -176,8 +184,8 @@
           aCell.innerText = item.answers.length > 0 ? item.answers.join(", ") : "Not Answered";
           aCell.className = item.answers.length > 0 ? "text-success" : "text-danger";
         }
-
         row.appendChild(aCell);
+
         resultTableBody.appendChild(row);
       });
     }
@@ -203,7 +211,7 @@
       });
 
       try {
-        const submitUrl = `https://776abe79dfab.ngrok-free.app/save_results`;
+        const submitUrl = `http://10.70.9.208:8000/save_results`;
         const res = await fetch(submitUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -217,7 +225,6 @@
         if (!res.ok) throw new Error("Failed to submit updates");
         alert("Answers updated successfully!");
 
-        // update currentData and re-render in view mode
         currentData = updatedAnswers.map(item => ({
           question: item.question,
           answers: item.answer ? [item.answer] : []
@@ -234,4 +241,3 @@
 </body>
 
 </html>
-
