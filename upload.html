@@ -162,7 +162,6 @@
             <tr>
               <th>Question</th>
               <th>Answer(s)</th>
-              <th>Accuracy</th>
             </tr>
           </thead>
           <tbody>
@@ -185,8 +184,8 @@
     const editBtn = document.getElementById("editBtn");
     const submitBtn = document.getElementById("submitBtn");
 
-    let sucCode = localStorage.getItem("sucCode") || "1332";
-    let examID = localStorage.getItem("examId") || "eq133";
+    let sucCode = localStorage.getItem("sucCode") || "";
+    let examID = localStorage.getItem("examId") || "";
     let currentData = [];
 
     cameraBtn.addEventListener("click", () => fileInput.click());
@@ -203,43 +202,43 @@
 
       resultSpinner.classList.add("active");
 
-      // Replace this fetch URL with your actual backend endpoint
+      // Replace this with your actual API endpoint
       const apiBase = "http://10.70.9.208:8000";
-      const apiUrl = `${apiBase}/process/${sucCode}/${examID}`;
       const formData = new FormData();
       formData.append("file", file);
 
       try {
-        const response = await fetch(apiUrl, { method: "POST", body: formData });
-        if (!response.ok) throw new Error("Upload failed!");
-        const data = await response.json();
+        const res = await fetch(`${apiBase}/process/${sucCode || "default"}/${examID || "default"}`, {
+          method: "POST",
+          body: formData
+        });
+        if (!res.ok) throw new Error("Processing failed!");
+        const data = await res.json();
 
-        // Update localStorage
-        sucCode = data.suc || sucCode;
-        examID = data.examID || examID;
+        // Update exam info
+        sucCode = data.suc;
+        examID = data.examID;
         localStorage.setItem("sucCode", sucCode);
         localStorage.setItem("examId", examID);
 
-        // Update processed image
-        let imgUrl = data.image_url.startsWith("http") ? data.image_url : apiBase + data.image_url;
-        resultImg.src = imgUrl + "?t=" + new Date().getTime();
-
-        // Update exam info
         examInfo.innerText = `SUC Code: ${sucCode} | Exam ID: ${examID}`;
 
-        // Store results
+        // Update processed image
+        let imgUrl = data.image_url;
+        if (!imgUrl.startsWith("http")) imgUrl = apiBase + imgUrl;
+        resultImg.src = imgUrl + "?t=" + new Date().getTime();
+
+        // Update table
         currentData = data.result.map(item => ({
           question: item.question,
-          answers: item.answers,
-          accuracy: item.accuracy
+          answers: item.answers
         }));
-
         renderTable(currentData, false);
-        editBtn.disabled = false;
 
+        editBtn.disabled = false;
       } catch (err) {
+        alert("Error: " + (err.message || JSON.stringify(err)));
         console.error(err);
-        alert("Failed to process image: " + err.message);
       } finally {
         resultSpinner.classList.remove("active");
       }
@@ -250,12 +249,10 @@
       data.forEach(item => {
         const row = document.createElement("tr");
 
-        // Question
         const qCell = document.createElement("td");
         qCell.innerText = item.question;
         row.appendChild(qCell);
 
-        // Answer
         const aCell = document.createElement("td");
         if (editableMode) {
           const input = document.createElement("input");
@@ -269,37 +266,49 @@
           aCell.className = item.answers.length ? "text-success" : "text-danger";
         }
         row.appendChild(aCell);
-
-        // Accuracy
-        const accCell = document.createElement("td");
-        accCell.innerText = item.accuracy !== undefined ? (item.accuracy * 100).toFixed(2) + "%" : "-";
-        row.appendChild(accCell);
-
         resultTableBody.appendChild(row);
       });
     }
 
-    // Edit button
     editBtn.addEventListener("click", () => {
       renderTable(currentData, true);
       editBtn.disabled = true;
       submitBtn.disabled = false;
     });
 
-    // Submit button
     submitBtn.addEventListener("click", async () => {
       const inputs = document.querySelectorAll("#resultTable input");
-      currentData = Array.from(inputs).map(input => ({
+      const updatedAnswers = Array.from(inputs).map(input => ({
         question: input.dataset.question,
-        answers: input.value ? [input.value.trim()] : [],
-        accuracy: undefined
+        answer: input.value.trim()
       }));
 
-      renderTable(currentData, false);
-      editBtn.disabled = false;
-      submitBtn.disabled = true;
+      try {
+        const submitUrl = "http://10.70.9.208:8000/save_results";
+        const res = await fetch(submitUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            suc: sucCode,
+            examID: examID,
+            answers: updatedAnswers
+          })
+        });
+        if (!res.ok) throw new Error("Submission failed!");
+        alert("Answers updated successfully!");
 
-      alert("Answers updated successfully!");
+        // Update table view
+        currentData = updatedAnswers.map(item => ({
+          question: item.question,
+          answers: item.answer ? [item.answer] : []
+        }));
+        renderTable(currentData, false);
+
+        editBtn.disabled = false;
+        submitBtn.disabled = true;
+      } catch (err) {
+        alert("Update failed: " + err.message);
+      }
     });
   </script>
 </body>
