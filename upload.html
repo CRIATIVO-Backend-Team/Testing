@@ -95,26 +95,19 @@
 
     <!-- Upload / Camera Section -->
     <div class="card card-body mb-4">
-      <h6 class="text-start mb-3 card-title mt-0 b-3">Upload Key Sheet</h6>
-      <form id="uploadForm">
-        <input type="file" id="fileInput" accept="image/*" capture="environment" required hidden>
-        <button type="button" id="cameraBtn" class="btn btn-outline-success w-100 mb-2">
-          <i class="bi bi-camera me-2 fs-5"></i> Open Camera
-        </button>
-        <div class="d-flex align-items-center my-1">
-          <hr class="flex-grow-1" style="color:#9fa4a5bf;">
-          <span class="mx-2 small" style="color: #767d80bf;">OR</span>
-          <hr class="flex-grow-1" style="color:#9fa4a5bf;">
-        </div>
+  <h6 class="text-start mb-3 card-title mt-0 b-3">Upload Key Sheet</h6>
+  <form id="uploadForm">
+    <!-- Visible file input -->
+    <input type="file" id="fileInput" accept="image/*" class="form-control mb-3" required>
 
-        <button type="submit" class="btn btn-outline-primary w-100">
-          <i class="bi bi-upload me-2"></i> Upload & Process
-        </button>
-      </form>
-      <div id="resultSpinner" class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-    </div>
+    <button type="submit" class="btn btn-outline-primary w-100">
+      <i class="bi bi-upload me-2"></i> Upload & Process
+    </button>
+  </form>
+  <div id="resultSpinner" class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+</div
 
     <!-- Preview and Processed Result -->
     <div class="row g-3">
@@ -188,7 +181,6 @@
     let examID = localStorage.getItem("examId") || "";
     let currentData = [];
 
-    cameraBtn.addEventListener("click", () => fileInput.click());
 
     fileInput.addEventListener("change", () => {
       const file = fileInput.files[0];
@@ -314,6 +306,7 @@
 </body>
 
 </html>
+
 
 
 
