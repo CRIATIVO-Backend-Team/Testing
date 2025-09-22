@@ -8,6 +8,7 @@
   <!-- AngularJS + QR Scanner -->
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
   <!-- Google Fonts -->
   <link href="https://fonts.gstatic.com" rel="preconnect">
@@ -114,8 +115,8 @@
       <div class="col-md-6 panel">
         <div class="card card-custom p-3 text-center">
           <h6 class="text-start mb-3 card-title mt-0">Preview</h6>
-          <img id="preview" class="preview-img" src="https://via.placeholder.com/300x260?text=Preview"
-            alt="Preview will appear here">
+          <img id="previewImg" class="preview-img" src="https://via.placeholder.com/300x260?text=Preview" alt="Preview will appear here">
+          <canvas id="previewPdf" class="preview-img" style="display:none;"></canvas>
         </div>
       </div>
 
@@ -176,6 +177,8 @@
     const examInfo = document.getElementById("examInfo");
     const editBtn = document.getElementById("editBtn");
     const submitBtn = document.getElementById("submitBtn");
+    const previewImg = document.getElementById("previewImg");
+    const previewPdf = document.getElementById("previewPdf");
 
     let sucCode = localStorage.getItem("sucCode") || "";
     let examID = localStorage.getItem("examId") || "";
@@ -187,11 +190,34 @@
       if (!file) return;
     
       if (file.type === "application/pdf") {
-        // Show placeholder for PDF
-        preview.src = "https://via.placeholder.com/300x260?text=PDF+Selected";
+        previewImg.style.display = "none";
+        previewPdf.style.display = "block";
+    
+        const fileReader = new FileReader();
+        fileReader.onload = function() {
+          const typedarray = new Uint8Array(this.result);
+    
+          pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+            pdf.getPage(1).then(page => {
+              const viewport = page.getViewport({ scale: 1.2 });
+              const canvas = previewPdf;
+              const context = canvas.getContext("2d");
+              canvas.height = viewport.height;
+              canvas.width = viewport.width;
+    
+              page.render({
+                canvasContext: context,
+                viewport: viewport
+              });
+            });
+          });
+        };
+        fileReader.readAsArrayBuffer(file);
+    
       } else {
-        // Show preview for image
-        preview.src = URL.createObjectURL(file);
+        previewPdf.style.display = "none";
+        previewImg.style.display = "block";
+        previewImg.src = URL.createObjectURL(file);
       }
     });
 
@@ -315,6 +341,7 @@
 </body>
 
 </html>
+
 
 
 
