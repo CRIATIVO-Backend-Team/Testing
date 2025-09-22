@@ -34,8 +34,20 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       background: #fff;
     }
-
-    .preview-img,
+    
+    .preview-img {
+        width: 100%;
+        border-radius: 8px;
+        border: 2px dashed #ebeef4;
+        object-fit: contain;
+        transition: all 0.3s ease;
+    }
+    
+    #previewPdf {
+        width: 100% !important;       /* override width 100% */
+        height: auto !important;      /* allow height to scale */
+        display: none;
+    }
     .result-img {
       width: 100%;
       height: 260px;
@@ -190,37 +202,38 @@
       if (!file) return;
     
       if (file.type === "application/pdf") {
-        previewImg.style.display = "none";
-        previewPdf.style.display = "block";
-    
-        const fileReader = new FileReader();
-        fileReader.onload = function() {
-          const typedarray = new Uint8Array(this.result);
-    
-          pdfjsLib.getDocument(typedarray).promise.then(pdf => {
-            pdf.getPage(1).then(page => {
-              const viewport = page.getViewport({ scale: 1.2 });
-              const canvas = previewPdf;
-              const context = canvas.getContext("2d");
-              canvas.height = viewport.height;
-              canvas.width = viewport.width;
-    
-              page.render({
-                canvasContext: context,
-                viewport: viewport
+          previewImg.style.display = "none";
+          previewPdf.style.display = "block";
+      
+          const fileReader = new FileReader();
+          fileReader.onload = function() {
+              const typedarray = new Uint8Array(this.result);
+      
+              pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+                  pdf.getPage(1).then(page => {
+                      const viewport = page.getViewport({ scale: 1.5 }); // increase scale if too small
+                      const canvas = previewPdf;
+                      const context = canvas.getContext("2d");
+      
+                      canvas.width = viewport.width;
+                      canvas.height = viewport.height;
+      
+                      page.render({
+                          canvasContext: context,
+                          viewport: viewport
+                      });
+                  });
               });
-            });
-          });
-        };
-        fileReader.readAsArrayBuffer(file);
-    
+          };
+          fileReader.readAsArrayBuffer(file);
+      
       } else {
-        previewPdf.style.display = "none";
-        previewImg.style.display = "block";
-        previewImg.src = URL.createObjectURL(file);
+          previewPdf.style.display = "none";
+          previewImg.style.display = "block";
+          previewImg.src = URL.createObjectURL(file);
       }
-    });
-
+      
+      
 
     uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -341,6 +354,7 @@
 </body>
 
 </html>
+
 
 
 
