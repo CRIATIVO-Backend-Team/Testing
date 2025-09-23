@@ -109,12 +109,22 @@
 
 <body>
   <div class="container py-4">
-    <div class="text-center mb-4 pagetitle ">
-      <h1 class="text-start fs-4">
-        <!-- <i class="bi bi-file-earmark-text-fill text-secondary"></i> -->
-        OMR Sheet Processor
-      </h1>
-    </div>
+   
+
+
+      <div class="d-flex justify-content-between pagetitle align-items-center">
+        <h1 class="text-start fs-4">
+          <!-- <i class="bi bi-file-earmark-text-fill text-secondary"></i> -->
+          OMR Sheet Processor
+        </h1>
+        <div class="text-center">
+          <button class="btn btn-sm btn-primary   mt-2" disabled>
+            Next
+            <i class="bi bi-arrow-right-short "></i>
+          </button>
+        </div>
+      </div>
+    
 
 
     <!-- Upload / Camera Section -->
@@ -148,7 +158,7 @@
         <p class="mb-0 text-muted pt-1" style="font-size: 12px;">* You can upload using camera or file.</p>
 
         <!-- Hidden File Input -->
-        <input type="file" id="fileInput" accept="image/*" capture="environment" required hidden>
+        <input type="file" id="fileInput" accept="image/*" required hidden>
 
       </form>
 
@@ -168,7 +178,7 @@
 
         <div>
           <button class="btn btn-outline-primary btn-sm mt-3 w-100" type="submit">
-             Upload
+            Upload
           </button>
         </div>
         <!-- Hidden File Input -->
@@ -187,6 +197,8 @@
           <h6 class="text-start mb-3 card-title mt-0 text-dark m-0 p-0">Preview</h6>
           <img id="preview" class="preview-img" src="assets/img/sample.png" alt="Preview will appear here">
         </div>
+
+
       </div>
 
 
