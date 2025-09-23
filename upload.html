@@ -178,188 +178,86 @@
 
   </div>
 
-  <script>
-    const uploadForm = document.getElementById("uploadForm");
-    const fileInput = document.getElementById("fileInput");
-    const cameraBtn = document.getElementById("cameraBtn");
-    const preview = document.getElementById("preview");
-    const resultImg = document.getElementById("resultImg");
-    const resultSpinner = document.getElementById("resultSpinner");
-    const resultTableBody = document.querySelector("#resultTable tbody");
-    const examInfo = document.getElementById("examInfo");
-    const editBtn = document.getElementById("editBtn");
-    const submitBtn = document.getElementById("submitBtn");
-    const previewImg = document.getElementById("preview");
-    const previewPdf = document.getElementById("previewPdf");
-    
+<script>
+  const uploadForm = document.getElementById("uploadForm");
+  const fileInput = document.getElementById("fileInput");
+  const previewImg = document.getElementById("preview");
+  const previewPdf = document.getElementById("previewPdf");
 
-    let sucCode = localStorage.getItem("sucCode") || "";
-    let examID = localStorage.getItem("examId") || "";
-    let currentData = [];
+  let sucCode = localStorage.getItem("sucCode") || "";
+  let examID = localStorage.getItem("examId") || "";
 
-
-    fileInput.addEventListener("change", () => {
+  // Preview logic (image & PDF)
+  fileInput.addEventListener("change", () => {
     const file = fileInput.files[0];
     if (!file) return;
 
-    // Reset previews
     previewImg.style.display = "none";
     if (previewPdf) previewPdf.style.display = "none";
 
     if (file.type === "application/pdf") {
-        // PDF preview
-        if (!previewPdf) return; // Make sure canvas exists
-        previewPdf.style.display = "block";
+      if (!previewPdf) return;
+      previewPdf.style.display = "block";
 
-        const fileReader = new FileReader();
-        fileReader.onload = function () {
-            const typedarray = new Uint8Array(this.result);
-            pdfjsLib.getDocument(typedarray).promise.then(pdf => {
-                pdf.getPage(1).then(page => {
-                    const viewport = page.getViewport({ scale: 1.5 });
-                    const canvas = previewPdf;
-                    const context = canvas.getContext("2d");
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
-
-                    page.render({
-                        canvasContext: context,
-                        viewport: viewport
-                    });
-                });
-            });
-        };
-        fileReader.readAsArrayBuffer(file);
+      const reader = new FileReader();
+      reader.onload = function () {
+        const typedarray = new Uint8Array(this.result);
+        pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+          pdf.getPage(1).then(page => {
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = previewPdf;
+            const context = canvas.getContext("2d");
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            page.render({ canvasContext: context, viewport: viewport });
+          });
+        });
+      };
+      reader.readAsArrayBuffer(file);
 
     } else if (file.type.startsWith("image/")) {
-        // Image preview
-        previewImg.style.display = "block";
-        previewImg.src = URL.createObjectURL(file);
-
+      previewImg.style.display = "block";
+      previewImg.src = URL.createObjectURL(file);
     } else {
-        alert("Please upload an image or PDF file only.");
-        fileInput.value = "";
+      alert("Please upload an image or PDF only.");
+      fileInput.value = "";
     }
-});
+  });
 
+  // Upload form submit
+  uploadForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const file = fileInput.files[0];
+    if (!file) return alert("Please upload an image or PDF first!");
 
+    const apiBase = "https://w.aditya.ac.in/omrapi";
+    const formData = new FormData();
+    formData.append("file", file);
 
-    uploadForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const file = fileInput.files[0];
-      if (!file) return alert("Please capture or upload an image first!");
-
-      resultSpinner.classList.add("active");
-
-      // Replace this with your actual API endpoint
-      const apiBase = "https://w.aditya.ac.in/omrapi";
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        const res = await fetch(`${apiBase}/process/${sucCode || "12346"}/${examID || "ew123"}`, {
-          method: "POST",
-          body: formData
-        });
-        if (!res.ok) throw new Error("Processing failed!");
-        const data = await res.json();
-
-        // Update exam info
-        sucCode = data.suc;
-        examID = data.examID;
-        localStorage.setItem("sucCode", sucCode);
-        localStorage.setItem("examId", examID);
-
-        examInfo.innerText = `SUC Code: ${sucCode} | Exam ID: ${examID}`;
-
-        // Update processed image
-        let imgUrl = data.image_url;
-        if (!imgUrl.startsWith("http")) imgUrl = apiBase + imgUrl;
-        resultImg.src = imgUrl + "?t=" + new Date().getTime();
-
-        // Update table
-        currentData = data.result.map(item => ({
-          question: item.question,
-          answers: item.answers
-        }));
-        renderTable(currentData, false);
-
-        editBtn.disabled = false;
-      } catch (err) {
-        alert("Error: " + (err.message || JSON.stringify(err)));
-        console.error(err);
-      } finally {
-        resultSpinner.classList.remove("active");
-      }
-    });
-
-    function renderTable(data, editableMode) {
-      resultTableBody.innerHTML = "";
-      data.forEach(item => {
-        const row = document.createElement("tr");
-
-        const qCell = document.createElement("td");
-        qCell.innerText = item.question;
-        row.appendChild(qCell);
-
-        const aCell = document.createElement("td");
-        if (editableMode) {
-          const input = document.createElement("input");
-          input.type = "text";
-          input.value = item.answers.join(", ");
-          input.className = "form-control text-center";
-          input.dataset.question = item.question;
-          aCell.appendChild(input);
-        } else {
-          aCell.innerText = item.answers.length ? item.answers.join(", ") : "Not Answered";
-          aCell.className = item.answers.length ? "text-success" : "text-danger";
-        }
-        row.appendChild(aCell);
-        resultTableBody.appendChild(row);
+    try {
+      const res = await fetch(`${apiBase}/process/${sucCode || "12346"}/${examID || "ew123"}`, {
+        method: "POST",
+        body: formData
       });
+      if (!res.ok) throw new Error("Processing failed!");
+      const data = await res.json();
+
+      // Store response in localStorage to use in result.html
+      localStorage.setItem("omrResultData", JSON.stringify(data));
+
+      // Update sucCode & examID in localStorage
+      localStorage.setItem("sucCode", data.suc);
+      localStorage.setItem("examId", data.examID);
+
+      // Redirect to result.html
+      window.location.href = "result.html";
+    } catch (err) {
+      alert("Error: " + (err.message || JSON.stringify(err)));
+      console.error(err);
     }
+  });
+</script>
 
-    editBtn.addEventListener("click", () => {
-      renderTable(currentData, true);
-      editBtn.disabled = true;
-      submitBtn.disabled = false;
-    });
-
-    submitBtn.addEventListener("click", async () => {
-      const inputs = document.querySelectorAll("#resultTable input");
-      const updatedAnswers = Array.from(inputs).map(input => ({
-        question: input.dataset.question,
-        answer: input.value.trim()
-      }));
-
-      try {
-        const submitUrl = "https://w.aditya.ac.in/omrapi/save_results";
-        const res = await fetch(submitUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            suc: sucCode,
-            examID: examID,
-            answers: updatedAnswers
-          })
-        });
-        if (!res.ok) throw new Error("Submission failed!");
-        alert("Answers updated successfully!");
-
-        // Update table view
-        currentData = updatedAnswers.map(item => ({
-          question: item.question,
-          answers: item.answer ? [item.answer] : []
-        }));
-        renderTable(currentData, false);
-
-        editBtn.disabled = false;
-        submitBtn.disabled = true;
-      } catch (err) {
-        alert("Update failed: " + err.message);
-      }
-    });
-  </script>
 
   <script src="assets/vendor/apexcharts/apexcharts.min.js"></script>
   <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
