@@ -222,27 +222,26 @@
     const examInfo = document.getElementById("examInfo");
     const editBtn = document.getElementById("editBtn");
     const submitBtn = document.getElementById("submitBtn");
-    const previewImg = document.getElementById("previewImg");
+    const previewImg = document.getElementById("preview");
     const previewPdf = document.getElementById("previewPdf");
 
     let sucCode = localStorage.getItem("sucCode") || "";
     let examID = localStorage.getItem("examId") || "";
     let currentData = [];
 
-
-  fileInput.addEventListener("change", () => {
+fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
   if (!file) return;
 
-  // Only handle image files
   if (file.type.startsWith("image/")) {
-    previewImg.style.display = "block";   // show preview
-    previewImg.src = URL.createObjectURL(file);  // set image preview
+    previewImg.style.display = "block";
+    previewImg.src = URL.createObjectURL(file);
   } else {
     alert("Please select a valid image file.");
     previewImg.style.display = "none";
   }
 });
+
 
 
 
