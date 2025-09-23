@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>OMR Sheet Processor</title>
+
+  <!-- Bootstrap -->
+  <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" /> -->
+
+  <!-- AngularJS + QR Scanner -->
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.gstatic.com" rel="preconnect">
+  <link
+    href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i"
+    rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
+  <link href="assets/vendor/quill/quill.snow.css" rel="stylesheet">
+  <link href="assets/vendor/quill/quill.bubble.css" rel="stylesheet">
+  <link href="assets/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <link href="assets/vendor/simple-datatables/style.css" rel="stylesheet">
+
+  <!-- Template Main CSS File -->
+  <link href="assets/css/style.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <style>
+    body {
+      font-family: "Nunito", sans-serif;
+      background: #f8f9fa;
+    }
+
+    h6 {
+      font-weight: 600;
+    }
+
+    .card-custom {
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      background: #fff;
+      margin-bottom: 1rem;
+    }
+
+    .btn-sm-custom {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 0.4rem 0.6rem;
+    }
+
+    .preview-img,
+    .result-img {
+      width: 100%;
+      border-radius: 12px;
+      border: 2px dashed #dee2e6;
+      height: 260px;
+      object-fit: contain;
+      /* background: #f6f6fe; */
+    }
+
+    /* Floating QR Button */
+    .footer-qr {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 60px;
+      background: #f9fcff;
+      border: 1px solid #dee2e6;
+      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 1000;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .footer-qr:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Responsive spacing */
+    @media (max-width: 768px) {
+      .d-flex.gap-3>div {
+        flex: 1;
+      }
+
+      .row.g-3>.col-md-6 {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-4">
+    <div class="text-center mb-4 pagetitle ">
+      <h1 class="text-start fs-4">
+        <!-- <i class="bi bi-file-earmark-text-fill text-secondary"></i> -->
+        OMR Sheet Processor
+      </h1>
+    </div>
+
+
+
+    <div class="row g-3">
+
+
+      <div class="col-md-6 panel">
+        <div class="card card-custom p-3 text-center">
+          <h6 class="text-start mb-3 card-title mt-0 text-dark m-0 p-0">Processed Result</h6>
+          <img id="resultImg" class="result-img" src="assets/img/processed.png" alt="Processed image will appear here">
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- Exam Info -->
+    <div class="card card-custom p-3 mt-4 text-center">
+      <h6 class="text-start text-dark card-title mt-0 mb-0  p-0">Exam Info</h6>
+      <p id="examInfo" class="text-muted small text-start">
+        <!-- <span class="text-danger">*</span> Your exam info will  appear here</p> -->
+      <div class="d-flex flex-column gap-2 text-start">
+        <div class="d-flex justify-content-between">
+          <div>
+            <span class="fw-semibold " style="color: #7e878fbf;font-size: 12px;">SUC Code:</span>
+            <div class="text-dark" id="sucCode">894994</div>
+          </div>
+          <div>
+            <span class="fw-semibold " style="color: #7e878fbf;font-size: 12px;">Exam ID:</span>
+            <div class="text-dark" id="examID">fkd7uyiu</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- JSON Table -->
+    <div class="card card-custom p-4 mt-4">
+
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <!-- Title -->
+        <h6 class="mb-0 text-dark card-title m-0 p-0">Detected Answers</h6>
+
+        <!-- Three dots dropdown (like filter example) -->
+
+      </div>
+
+
+
+
+      <div>
+
+        <div class="table-responsive" style="height: 300px; overflow-y: auto;scrollbar-width: thin;">
+          <table class="table align-middle" id="resultTable">
+            <thead class="table-primary sticky-top">
+              <tr>
+                <th class="text-center border" style="border: 1px solid #d6cfcf !important;">Question</th>
+                <th class="text-center border" style="border: 1px solid #d6cfcf !important;">Answer(s)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rows 1-30 -->
+              <tr>
+                <td class="text-center border">1</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> A</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">2</td>
+                <td class="text-center border">
+                  <div class="input-group input-group-sm justify-content-center"
+                    style="max-width: 120px; margin: auto;">
+                    <input type="text" class="form-control form-control text-center" value="B" maxlength="1">
+                    <button class="btn btn-outline-primary" type="button">OK</button>
+                  </div>
+                </td>
+
+
+              </tr>
+              <tr>
+                <td class="text-center border">3</td>
+                <td class="text-center border">
+                  <span class="badge rounded-pill text-danger  d-inline-flex align-items-center gap-1 px-3 py-1" style=" background: #fdecea;">
+                    <i class="bi bi-x fw-semibold"></i>
+                    Not Answered
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td class="text-center border">4</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> C</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">5</td>
+                <td class="text-center border"><span class="badge rounded-pill text-danger  d-inline-flex align-items-center gap-1 px-3 py-1" style=" background: #fdecea;">
+                    <i class="bi bi-x fw-semibold"></i>
+                    Not Answered
+                  </span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">6</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> D</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">7</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> A</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">8</td>
+                <td class="text-center border"><span class="badge rounded-pill text-danger  d-inline-flex align-items-center gap-1 px-3 py-1" style=" background: #fdecea;">
+                    <i class="bi bi-x fw-semibold"></i>
+                    Not Answered
+                  </span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">9</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> B</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">10</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> C</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">11</td>
+                <td class="text-center border"><span class="badge rounded-pill text-danger  d-inline-flex align-items-center gap-1 px-3 py-1" style=" background: #fdecea;">
+                    <i class="bi bi-x fw-semibold"></i>
+                    Not Answered
+                  </span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">12</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> D</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">13</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> A</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">14</td>
+                <td class="text-center border"><span class="badge rounded-pill text-danger  d-inline-flex align-items-center gap-1 px-3 py-1" style=" background: #fdecea;">
+                    <i class="bi bi-x fw-semibold"></i>
+                    Not Answered
+                  </span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">15</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> B</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">16</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> C</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">17</td>
+                <td class="text-center border"><span class="badge rounded-pill text-danger  d-inline-flex align-items-center gap-1 px-3 py-1" style=" background: #fdecea;">
+                    <i class="bi bi-x fw-semibold"></i>
+                    Not Answered
+                  </span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">18</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> D</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">19</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> A</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">20</td>
+                <td class="text-center border"><span class="badge rounded-pill text-danger  d-inline-flex align-items-center gap-1 px-3 py-1" style=" background: #fdecea;">
+                    <i class="bi bi-x fw-semibold"></i>
+                    Not Answered
+                  </span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">21</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> B</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">22</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> C</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">23</td>
+                <td class="text-center border"><span class="badge rounded-pill text-danger  d-inline-flex align-items-center gap-1 px-3 py-1" style=" background: #fdecea;">
+                    <i class="bi bi-x fw-semibold"></i>
+                    Not Answered
+                  </span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">24</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> D</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">25</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> A</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">26</td>
+                <td class="text-center border"><span class="badge rounded-pill text-danger  d-inline-flex align-items-center gap-1 px-3 py-1" style=" background: #fdecea;">
+                    <i class="bi bi-x fw-semibold"></i>
+                    Not Answered
+                  </span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">27</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> B</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">28</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> C</span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">29</td>
+                <td class="text-center border"><span class="badge rounded-pill text-danger  d-inline-flex align-items-center gap-1 px-3 py-1" style=" background: #fdecea;">
+                    <i class="bi bi-x fw-semibold"></i>
+                    Not Answered
+                  </span></td>
+              </tr>
+              <tr>
+                <td class="text-center border">30</td>
+                <td class="text-center border"><span class="badge  d-inline-flex align-items-center gap-1"
+                    style="color: #2eca6a;background: #e0f8e9;"><i class="bi bi-check-circle-fill"></i> D</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const uploadForm = document.getElementById("uploadForm");
+    const fileInput = document.getElementById("fileInput");
+    const cameraBtn = document.getElementById("cameraBtn");
+    const preview = document.getElementById("preview");
+    const resultImg = document.getElementById("resultImg");
+    const resultSpinner = document.getElementById("resultSpinner");
+    const resultTableBody = document.querySelector("#resultTable tbody");
+    const examInfo = document.getElementById("examInfo");
+    const editBtn = document.getElementById("editBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    const previewImg = document.getElementById("previewImg");
+    const previewPdf = document.getElementById("previewPdf");
+
+    let sucCode = localStorage.getItem("sucCode") || "";
+    let examID = localStorage.getItem("examId") || "";
+    let currentData = [];
+
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      if (file.type === "application/pdf") {
+        previewImg.style.display = "none";
+        previewPdf.style.display = "block";
+
+        const fileReader = new FileReader();
+        fileReader.onload = function () {
+          const typedarray = new Uint8Array(this.result);
+
+          pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+            pdf.getPage(1).then(page => {
+              const viewport = page.getViewport({ scale: 1.5 }); // increase scale if too small
+              const canvas = previewPdf;
+              const context = canvas.getContext("2d");
+
+              canvas.width = viewport.width;
+              canvas.height = viewport.height;
+
+              page.render({
+                canvasContext: context,
+                viewport: viewport
+              });
+            });
+          });
+        };
+        fileReader.readAsArrayBuffer(file);
+
+      } else {
+        previewPdf.style.display = "none";
+        previewImg.style.display = "block";
+        previewImg.src = URL.createObjectURL(file);
+      }
+    });
+
+
+
+    uploadForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const file = fileInput.files[0];
+      if (!file) return alert("Please capture or upload an image first!");
+
+      resultSpinner.classList.add("active");
+
+      // Replace this with your actual API endpoint
+      const apiBase = "https://w.aditya.ac.in/omrapi";
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch(`${apiBase}/process/${sucCode || "12346"}/${examID || "ew123"}`, {
+          method: "POST",
+          body: formData
+        });
+        if (!res.ok) throw new Error("Processing failed!");
+        const data = await res.json();
+
+        // Update exam info
+        sucCode = data.suc;
+        examID = data.examID;
+        localStorage.setItem("sucCode", sucCode);
+        localStorage.setItem("examId", examID);
+
+        examInfo.innerText = `SUC Code: ${sucCode} | Exam ID: ${examID}`;
+
+        // Update processed image
+        let imgUrl = data.image_url;
+        if (!imgUrl.startsWith("http")) imgUrl = apiBase + imgUrl;
+        resultImg.src = imgUrl + "?t=" + new Date().getTime();
+
+        // Update table
+        currentData = data.result.map(item => ({
+          question: item.question,
+          answers: item.answers
+        }));
+        renderTable(currentData, false);
+
+        editBtn.disabled = false;
+      } catch (err) {
+        alert("Error: " + (err.message || JSON.stringify(err)));
+        console.error(err);
+      } finally {
+        resultSpinner.classList.remove("active");
+      }
+    });
+
+    function renderTable(data, editableMode) {
+      resultTableBody.innerHTML = "";
+      data.forEach(item => {
+        const row = document.createElement("tr");
+
+        const qCell = document.createElement("td");
+        qCell.innerText = item.question;
+        row.appendChild(qCell);
+
+        const aCell = document.createElement("td");
+        if (editableMode) {
+          const input = document.createElement("input");
+          input.type = "text";
+          input.value = item.answers.join(", ");
+          input.className = "form-control text-center";
+          input.dataset.question = item.question;
+          aCell.appendChild(input);
+        } else {
+          aCell.innerText = item.answers.length ? item.answers.join(", ") : "Not Answered";
+          aCell.className = item.answers.length ? "text-success" : "text-danger";
+        }
+        row.appendChild(aCell);
+        resultTableBody.appendChild(row);
+      });
+    }
+
+    editBtn.addEventListener("click", () => {
+      renderTable(currentData, true);
+      editBtn.disabled = true;
+      submitBtn.disabled = false;
+    });
+
+    submitBtn.addEventListener("click", async () => {
+      const inputs = document.querySelectorAll("#resultTable input");
+      const updatedAnswers = Array.from(inputs).map(input => ({
+        question: input.dataset.question,
+        answer: input.value.trim()
+      }));
+
+      try {
+        const submitUrl = "https://w.aditya.ac.in/omrapi/save_results";
+        const res = await fetch(submitUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            suc: sucCode,
+            examID: examID,
+            answers: updatedAnswers
+          })
+        });
+        if (!res.ok) throw new Error("Submission failed!");
+        alert("Answers updated successfully!");
+
+        // Update table view
+        currentData = updatedAnswers.map(item => ({
+          question: item.question,
+          answers: item.answer ? [item.answer] : []
+        }));
+        renderTable(currentData, false);
+
+        editBtn.disabled = false;
+        submitBtn.disabled = true;
+      } catch (err) {
+        alert("Update failed: " + err.message);
+      }
+    });
+  </script>
+
+  <script src="assets/vendor/apexcharts/apexcharts.min.js"></script>
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/chart.js/chart.umd.js"></script>
+  <script src="assets/vendor/echarts/echarts.min.js"></script>
+  <script src="assets/vendor/quill/quill.js"></script>
+  <script src="assets/vendor/simple-datatables/simple-datatables.js"></script>
+  <script src="assets/vendor/tinymce/tinymce.min.js"></script>
+  <script src="assets/vendor/php-email-form/validate.js"></script>
+
+  <!-- Template Main JS File -->
+  <script src="assets/js/main.js"></script>
+</body>
+
+</html>
