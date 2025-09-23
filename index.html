@@ -107,9 +107,7 @@
 
         <div class="card p-2">
           <div class="card-body ">
-
             <h4 class="text-center card-title pb-2 border-bottom mb-4">SUC Code Scanner</h4>
-
             <div class="d-flex justify-content-center align-items-center gap-3 flex-wrap">
               <button class="btn btn-danger btn-sm d-flex align-items-center justify-content-center"
                 ng-click="stopQrScanner()" ng-show="scannerVisible">
@@ -117,26 +115,26 @@
               </button>
             </div>
 
-            <!-- Manual Input -->
+            <!-- Manual Inputs -->
             <div class="mt-1" ng-if="!sucCode">
               <label class="form-label mb-1" style="font-size: small;">Enter Exam Id</label>
               <input type="text" class="form-control" placeholder="Enter Exam Id"
-                ng-model="examId" ng-change="storeExamId()" />
+                     ng-model="examId" ng-change="storeExamId()" />
 
               <label class="form-label mb-1 mt-3" style="font-size: small;">Enter SUC Code</label>
               <div class="d-flex gap-3">
                 <input type="text" class="form-control" placeholder="Enter SUC Code manually"
-                  ng-model="sucCode" ng-change="storeSuc()" />
+                       ng-model="sucCode" ng-change="storeSuc()" />
                 <div class="btn btn-light p-1 px-2" ng-click="startQrScanner()">
                   <i class="bi bi-qr-code-scan text-primary" style="font-size: 16px;"></i>
                 </div>
               </div>
             </div>
 
+            <!-- Submit -->
             <div class="">
-              <!-- ✅ Fixed: disabled until both filled -->
               <button type="button" class="btn btn-sm btn-primary mt-2 w-100"
-                ng-disabled="!sucCode || !examId" ng-click="submitSuc()">
+                      ng-click="submitSuc()">
                 Submit
               </button>
             </div>
@@ -149,7 +147,7 @@
             <!-- Exam ID input (after scan) -->
             <div class="input-group mt-3" ng-show="sucCode">
               <input type="text" class="form-control" placeholder="Enter Exam ID"
-                ng-model="examId" ng-change="storeExamId()" />
+                     ng-model="examId" ng-change="storeExamId()" />
             </div>
 
             <!-- Next Button -->
@@ -245,15 +243,13 @@
         }
       };
 
-      // ✅ Fixed Submit Button
+      // Submit Button
       $scope.submitSuc = function () {
         if (!$scope.sucCode || !$scope.examId) {
           alert("Please enter both SUC Code and Exam ID.");
           return;
         }
-        localStorage.setItem("sucCode", $scope.sucCode.trim());
-        localStorage.setItem("examId", $scope.examId.trim());
-        alert("Saved!\nSUC Code: " + $scope.sucCode + "\nExam ID: " + $scope.examId);
+        alert("SUC Code: " + $scope.sucCode + "\nExam ID: " + $scope.examId);
       };
 
       // Next
@@ -277,8 +273,6 @@
   <script src="assets/vendor/simple-datatables/simple-datatables.js"></script>
   <script src="assets/vendor/tinymce/tinymce.min.js"></script>
   <script src="assets/vendor/php-email-form/validate.js"></script>
-
-  <!-- Template Main JS File -->
   <script src="assets/js/main.js"></script>
 </body>
 </html>
