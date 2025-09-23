@@ -134,8 +134,9 @@
             </div>
 
             <div class="">
+              <!-- ✅ Fixed: disabled until both filled -->
               <button type="button" class="btn btn-sm btn-primary mt-2 w-100"
-                ng-click="submitSuc()">
+                ng-disabled="!sucCode || !examId" ng-click="submitSuc()">
                 Submit
               </button>
             </div>
@@ -244,13 +245,15 @@
         }
       };
 
-      // Submit Button
+      // ✅ Fixed Submit Button
       $scope.submitSuc = function () {
         if (!$scope.sucCode || !$scope.examId) {
           alert("Please enter both SUC Code and Exam ID.");
           return;
         }
-        alert("SUC Code: " + $scope.sucCode + "\nExam ID: " + $scope.examId);
+        localStorage.setItem("sucCode", $scope.sucCode.trim());
+        localStorage.setItem("examId", $scope.examId.trim());
+        alert("Saved!\nSUC Code: " + $scope.sucCode + "\nExam ID: " + $scope.examId);
       };
 
       // Next
