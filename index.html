@@ -150,25 +150,14 @@
             </div>
 
             <div class="">
-              <button type="button" class="btn btn-sm btn-primary mt-2 w-100" ng-disabled="!scannedCode || !examId"
+              <button type="button" class="btn btn-sm btn-primary mt-2 w-100" ng-disabled="(!scannedCode && !examId)"
                 ng-click="nextStep()">
                 Submit
               </button>
 
+
             </div>
 
-            <!-- <div class="d-flex align-items-center my-4">
-              <hr class="flex-grow-1" style="color:#9fa4a5bf;">
-              <span class="mx-2 small" style="color: #767d80bf;">OR</span>
-              <hr class="flex-grow-1" style="color:#9fa4a5bf;">
-            </div>
-
-
-            <p class="text-center text-muted" style="font-size: small;">Scan QR Code</p>
-            <div class="d-flex justify-content-center">
-              <div class="qr-btn" ng-click="startQrScanner()">
-                <i class="bi bi-qr-code-scan"></i>
-              </div> -->
 
           </div>
 
@@ -270,18 +259,21 @@
 
       // Next Step
       $scope.nextStep = function () {
-        if ($scope.examId && $scope.examId.trim() !== '') {
-          localStorage.setItem("examId", $scope.examId.trim());
-
-          let suc = localStorage.getItem("sucCode");
-          let exam = localStorage.getItem("examId");
-
-          alert("SUC Code: " + suc + "\nExam ID: " + exam);
-
-          window.location.href = "upload.html";
-        } else {
-          alert("Please enter Exam ID.");
+        if ((!$scope.scannedCode || $scope.scannedCode.trim() === '') ||
+          (!$scope.examId || $scope.examId.trim() === '')) {
+          alert("Please enter both Exam ID and SUC Code.");
+          return;
         }
+
+        localStorage.setItem("examId", $scope.examId.trim());
+        localStorage.setItem("sucCode", $scope.scannedCode.trim());
+
+        let suc = localStorage.getItem("sucCode");
+        let exam = localStorage.getItem("examId");
+
+        alert("SUC Code: " + suc + "\nExam ID: " + exam);
+
+        window.location.href = "upload.html";
       };
     });
   </script>
