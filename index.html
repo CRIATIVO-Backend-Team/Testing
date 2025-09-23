@@ -32,7 +32,7 @@
   <!-- Template Main CSS File -->
   <link href="assets/css/style.css" rel="stylesheet">
 
-    <style>
+  <style>
     body {
       background: #f8f9fa;
     }
@@ -49,41 +49,6 @@
       margin-top: 20px;
     }
 
-
-    .footer-menu {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      height: 70px;
-      background: #fff;
-      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1);
-      display: flex;
-      justify-content: center;
-      align-items: flex-end;
-      z-index: 1000;
-    }
-
-    /* Curved notch background */
-    .footer-notch {
-      position: absolute;
-      top: -25px;
-      /* raises the notch */
-      width: 70px;
-      height: 35px;
-      background: #fff;
-      border-top-left-radius: 35px;
-      border-top-right-radius: 35px;
-      box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.05);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    
-
-
-
-    /* QR button */
     .qr-btn {
       width: 110px;
       height: 110px;
@@ -94,8 +59,6 @@
       justify-content: center;
       align-items: center;
       cursor: pointer;
-      /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); */
-      /* transition: transform 0.2s, box-shadow 0.2s; */
     }
 
     .qr-btn:hover {
@@ -113,77 +76,39 @@
 <body ng-controller="qrscan_bus_Ctrl">
   <div class="container py-5">
     <div class="row justify-content-center">
-       <div class="col-md-4">
-
+      <div class="col-md-4">
         <div class="card p-2">
-          <div class="card-body ">
+          <div class="card-body">
 
-            <!-- Start QR Scan Button -->
             <h4 class="text-center card-title pb-2 border-bottom mb-4">SUC Code Scanner</h4>
-            <div class="d-flex justify-content-center align-items-center gap-3 flex-wrap">
 
-              <!-- Stop Button -->
+            <!-- Stop Button -->
+            <div class="d-flex justify-content-center align-items-center gap-3 flex-wrap">
               <button class="btn btn-danger btn-sm d-flex align-items-center justify-content-center"
                 ng-click="stopQrScanner()" ng-show="scannerVisible">
                 <i class="bi bi-stop-circle me-2"></i> Stop
               </button>
             </div>
 
-
-
-
-            <!-- Manual SUC input (only show if not scanned) -->
-            <div class=" mt-1" ng-if="!scannedCode">
-               <label class="form-label mb-1  " style="font-size: small;">Enter Exam Id</label>
-
-              <input type="text" class="form-control " placeholder="Enter Exam Id" ng-model="scannedCode"
-                ng-change="storeSuc()" />
-
-              <label class="form-label mb-1  mt-3 " style="font-size: small;">Enter SUC Code</label>
-              <div class="d-flex gap-3">
-                <input type="text" class="form-control" placeholder="Enter SUC Code manually" ng-model="scannedCode"
-                ng-change="storeSuc()" />
-                 <div class="btn btn-light p-1 px-2" ng-click="startQrScanner()">
-                <i class="bi bi-qr-code-scan text-primary " style="font-size: 16px;"></i>
-              </div>
-              </div>
-             
-            </div>
-
-            <div class="">
-              <button type="button" class="btn btn-sm btn-primary mt-2 w-100" disabled ng-click="submitSuc()">
-                Submit
-              </button>
-            </div>
-
-            <!-- <div class="d-flex align-items-center my-4">
-              <hr class="flex-grow-1" style="color:#9fa4a5bf;">
-              <span class="mx-2 small" style="color: #767d80bf;">OR</span>
-              <hr class="flex-grow-1" style="color:#9fa4a5bf;">
-            </div>
-
-
-            <p class="text-center text-muted" style="font-size: small;">Scan QR Code</p>
-            <div class="d-flex justify-content-center">
-              <div class="qr-btn" ng-click="startQrScanner()">
-                <i class="bi bi-qr-code-scan"></i>
-              </div> -->
-
-            </div>
-
-            <!-- SUC Code Display -->
-            <div class="alert alert-info mt-4 text-center" ng-if="scannedCode">
-              <strong>SUC Code:</strong> {{ scannedCode }}
-            </div>
-
-            <!-- Exam ID Input -->
-            <div class="input-group mt-3" ng-show="scannedCode">
+            <!-- Manual Input -->
+            <div class="mt-1">
+              <label class="form-label mb-1" style="font-size: small;">Enter Exam Id</label>
               <input type="text" class="form-control" placeholder="Enter Exam ID" ng-model="examId" />
+
+              <label class="form-label mb-1 mt-3" style="font-size: small;">Enter SUC Code</label>
+              <div class="d-flex gap-3">
+                <input type="text" class="form-control" placeholder="Enter SUC Code manually" ng-model="sucCode" ng-change="storeSuc()" />
+                <div class="btn btn-light p-1 px-2" ng-click="startQrScanner()">
+                  <i class="bi bi-qr-code-scan text-primary" style="font-size: 16px;"></i>
+                </div>
+              </div>
             </div>
 
             <!-- Next Button -->
-            <div class="text-center mt-3" ng-show="scannedCode">
-              <button class="btn btn-success" ng-click="nextStep()">Next</button>
+            <div class="text-center mt-3">
+              <button class="btn btn-success w-100" ng-click="nextStep()" ng-disabled="!examId || !sucCode">
+                Next
+              </button>
             </div>
 
             <!-- QR Scanner -->
@@ -191,13 +116,18 @@
               <div id="qr-reader"></div>
             </div>
 
+            <!-- SUC Code Display -->
+            <div class="alert alert-info mt-4 text-center" ng-if="sucCode">
+              <strong>SUC Code:</strong> {{ sucCode }}
+            </div>
+
             <!-- Error Message -->
             <div class="alert alert-danger p-1 text-danger text-start small mt-3 text-center" ng-if="errorMessage">
               <i class="bi bi-exclamation-triangle"></i> {{ errorMessage }}
             </div>
+
           </div>
         </div>
-
       </div>
     </div>
   </div>
@@ -206,8 +136,8 @@
     var app = angular.module('qrscan_bus_App', []);
     app.controller('qrscan_bus_Ctrl', function ($scope) {
       $scope.scannerVisible = false;
-      $scope.scannedCode = null;
-      $scope.examId = null;
+      $scope.sucCode = null;   // Separate model for SUC Code
+      $scope.examId = null;     // Separate model for Exam ID
       $scope.errorMessage = null;
       let qrScanner = null;
 
@@ -222,20 +152,17 @@
         }
 
         $scope.scannerVisible = true;
-        $scope.scannedCode = null;
 
-        if (!qrScanner) {
-          qrScanner = new Html5Qrcode("qr-reader");
-        }
+        if (!qrScanner) qrScanner = new Html5Qrcode("qr-reader");
 
         qrScanner.start(
           { facingMode: { exact: "environment" } },
           { fps: 10, qrbox: 250 },
           function (decodedText) {
             $scope.$apply(() => {
-              $scope.scannedCode = decodedText.trim();
+              $scope.sucCode = decodedText.trim(); // Fill SUC code automatically
               $scope.scannerVisible = false;
-              localStorage.setItem("sucCode", $scope.scannedCode);
+              localStorage.setItem("sucCode", $scope.sucCode);
             });
             qrScanner.stop().catch(err => console.error("Stop failed", err));
           },
@@ -254,38 +181,32 @@
       // Stop QR Scanner
       $scope.stopQrScanner = function () {
         if (qrScanner) {
-          qrScanner.stop().then(() => {
-            $scope.$apply(() => $scope.scannerVisible = false);
-          }).catch(err => console.error("Stop failed", err));
+          qrScanner.stop().then(() => $scope.$apply(() => $scope.scannerVisible = false))
+                       .catch(err => console.error("Stop failed", err));
         }
       };
 
-      // Store SUC if manually entered
+      // Store manual SUC input
       $scope.storeSuc = function () {
-        if ($scope.scannedCode && $scope.scannedCode.trim() !== '') {
-          localStorage.setItem("sucCode", $scope.scannedCode.trim());
+        if ($scope.sucCode && $scope.sucCode.trim() !== '') {
+          localStorage.setItem("sucCode", $scope.sucCode.trim());
         }
       };
 
       // Next Step
       $scope.nextStep = function () {
-        if ($scope.examId && $scope.examId.trim() !== '') {
+        if ($scope.examId && $scope.examId.trim() !== '' && $scope.sucCode && $scope.sucCode.trim() !== '') {
           localStorage.setItem("examId", $scope.examId.trim());
-
-          let suc = localStorage.getItem("sucCode");
-          let exam = localStorage.getItem("examId");
-
-          alert("SUC Code: " + suc + "\nExam ID: " + exam);
-
+          localStorage.setItem("sucCode", $scope.sucCode.trim());
           window.location.href = "upload.html";
         } else {
-          alert("Please enter Exam ID.");
+          alert("Please enter both Exam ID and SUC Code.");
         }
       };
     });
   </script>
 
-   <!-- Vendor JS Files -->
+  <!-- Vendor JS Files -->
   <script src="assets/vendor/apexcharts/apexcharts.min.js"></script>
   <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
   <script src="assets/vendor/chart.js/chart.umd.js"></script>
@@ -299,6 +220,3 @@
   <script src="assets/js/main.js"></script>
 </body>
 </html>
-
-
-
