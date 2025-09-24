@@ -77,7 +77,13 @@
 
     <!-- Detected Answers Table -->
     <div class="card card-custom p-4 mb-4">
-      <h6 class="text-dark mb-3">Detected Answers</h6>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="text-dark mb-0">Detected Answers</h6>
+        <div>
+          <button id="editBtn" class="btn btn-sm btn-outline-primary">Edit</button>
+          <button id="submitBtn" class="btn btn-sm btn-success" disabled>Submit</button>
+        </div>
+      </div>
       <div class="table-responsive" style="height: 300px; overflow-y: auto;">
         <table class="table align-middle text-center" id="resultTable">
           <thead class="table-primary sticky-top">
@@ -94,7 +100,11 @@
   </div>
 
   <script>
-    // Get stored API response from upload.html
+    let currentData = [];
+    let sucCode = "-";
+    let examID = "-";
+
+    // Load stored data (from upload.html or API)
     const dataStr = localStorage.getItem("omrResultData");
     if (!dataStr) {
       alert("No result data found. Please upload an OMR sheet first.");
@@ -102,17 +112,28 @@
       const data = JSON.parse(dataStr);
 
       // Set exam info
-      document.getElementById("sucCode").innerText = data.suc || "-";
-      document.getElementById("examID").innerText = data.examID || "-";
+      sucCode = data.suc || "-";
+      examID = data.examID || "-";
+      document.getElementById("sucCode").innerText = sucCode;
+      document.getElementById("examID").innerText = examID;
 
       // Set processed image
       const imgUrl = data.image_url.startsWith("http") ? data.image_url : "https://w.aditya.ac.in/omrapi" + data.image_url;
       document.getElementById("resultImg").src = imgUrl + "?t=" + new Date().getTime();
 
-      // Fill table
+      // Save to currentData
+      currentData = data.result.map(item => ({
+        question: item.question,
+        answers: item.answers
+      }));
+
+      renderTable(currentData, false);
+    }
+
+    function renderTable(data, editableMode) {
       const tbody = document.querySelector("#resultTable tbody");
       tbody.innerHTML = "";
-      data.result.forEach(item => {
+      data.forEach(item => {
         const tr = document.createElement("tr");
 
         const qCell = document.createElement("td");
@@ -120,16 +141,73 @@
         tr.appendChild(qCell);
 
         const aCell = document.createElement("td");
-        if (item.answers.length > 0) {
-          aCell.innerHTML = `<span class="badge badge-success d-inline-flex align-items-center gap-1">${item.answers.join(", ")}</span>`;
+        if (editableMode) {
+          const input = document.createElement("input");
+          input.type = "text";
+          input.value = item.answers.join(", ");
+          input.className = "form-control form-control-sm text-center";
+          input.dataset.question = item.question;
+          aCell.appendChild(input);
         } else {
-          aCell.innerHTML = `<span class="badge badge-failed d-inline-flex align-items-center gap-1">Not Answered</span>`;
+          if (item.answers.length > 0) {
+            aCell.innerHTML = `<span class="badge badge-success">${item.answers.join(", ")}</span>`;
+          } else {
+            aCell.innerHTML = `<span class="badge badge-failed">Not Answered</span>`;
+          }
         }
         tr.appendChild(aCell);
-
         tbody.appendChild(tr);
       });
     }
+
+    // Buttons
+    const editBtn = document.getElementById("editBtn");
+    const submitBtn = document.getElementById("submitBtn");
+
+    editBtn.addEventListener("click", () => {
+      renderTable(currentData, true);
+      editBtn.disabled = true;
+      submitBtn.disabled = false;
+    });
+
+    submitBtn.addEventListener("click", async () => {
+      const inputs = document.querySelectorAll("#resultTable input");
+      const updatedAnswers = Array.from(inputs).map(input => ({
+        question: input.dataset.question,
+        answers: input.value.trim() ? input.value.split(",").map(a => a.trim()) : []
+      }));
+
+      try {
+        const res = await fetch("https://w.aditya.ac.in/omrapi/save_results", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            suc: sucCode,
+            examID: examID,
+            answers: updatedAnswers
+          })
+        });
+
+        if (!res.ok) throw new Error("Submission failed!");
+
+        // Save updated data locally
+        currentData = updatedAnswers;
+        localStorage.setItem("omrResultData", JSON.stringify({
+          suc: sucCode,
+          examID: examID,
+          image_url: document.getElementById("resultImg").src,
+          result: currentData
+        }));
+
+        renderTable(currentData, false);
+        editBtn.disabled = false;
+        submitBtn.disabled = true;
+
+        alert("Answers updated successfully!");
+      } catch (err) {
+        alert("Update failed: " + err.message);
+      }
+    });
   </script>
 
 </body>
