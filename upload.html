@@ -39,11 +39,13 @@
     }
 
     .preview-img {
-      width: 100%;
+       width: 100%;
       border-radius: 12px;
       border: 2px dashed #dee2e6;
-      height: 500px;
+      max-height: 600px;
+      height: auto;
       object-fit: contain;
+      transition: height 0.3s ease;
     }
 
     button.btn-sm, .btn-sm-custom, .btn-flex {
@@ -299,6 +301,7 @@
   </script>
 </body>
 </html>
+
 
 
 
