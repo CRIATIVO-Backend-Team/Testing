@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <title>OMR Sheet Processor</title>
 
-  <!-- AngularJS + QR Scanner + pdf.js -->
+  <!-- AngularJS + QR Scanner -->
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -40,7 +40,6 @@
     }
 
     .card-custom {
-      /* border-radius: 16px; */
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       background: #fff;
       margin-bottom: 1rem;
@@ -105,22 +104,6 @@
       height: 150px;
       background-color: #f3f6f8;
     }
-
-    /* Camera Modal */
-    #cameraModal video {
-      width: 100%;
-      border-radius: 10px;
-      background: #000;
-    }
-
-    .permission-hint {
-      font-size: 0.9rem;
-    }
-
-    .small-muted {
-      font-size: 0.85rem;
-      color: #6c757d;
-    }
   </style>
 </head>
 
@@ -129,7 +112,6 @@
 
     <div class="d-flex justify-content-between pagetitle align-items-center">
       <h1 class="text-start fs-4">
-        <!-- <i class="bi bi-file-earmark-text-fill text-secondary"></i> -->
         OMR Sheet Processor
       </h1>
 
@@ -142,40 +124,31 @@
 
     <!-- Upload / Camera Section -->
     <div class="card card-body mb-4">
-
       <form id="uploadForm" class="p-1">
 
         <!-- Heading -->
         <h6 class="text-dark card-title mb-2 fs-6">Upload Key Sheets</h6>
 
-        <!-- Dashed Upload Box (click opens camera or fallback) -->
-        <div id="uploadBox"
-          class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
-          style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6"
-          onclick="openCameraOrFallback()">
-          <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
-          <p class="text-muted mb-0 permission-hint" style="font-size: 13px;">Click to capture image (or fallback to file picker)</p>
+        <!-- Dashed Upload Box (Camera) -->
+        <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
+             style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6"
+             onclick="cameraInput.click();">
+          <i class="bi bi-camera fs-1 text-primary"></i>
+          <p class="text-muted mb-0" style="font-size: 13px;">Click to capture image</p>
         </div>
 
-        <div class="d-grid gap-2 mt-3">
-          <!-- "Upload" button opens file chooser -->
-          <button id="openFileBtn" type="button" class="btn btn-outline-primary btn-sm w-100">
+        <!-- Hidden Camera Input -->
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
+
+        <div>
+          <button class="btn btn-outline-primary btn-sm mt-3 w-100" type="submit">
             Upload
           </button>
-
-          <!-- "Process" button sends the selected file to API (keeps old behavior) -->
-          <button id="processBtn" type="button" class="btn btn-primary btn-sm w-100">
-            Process
-          </button>
         </div>
-
-        <!-- Hidden File Input: used both for manual picker and for captured image -->
-        <input type="file" id="fileInput" accept="image/*,application/pdf" required hidden>
+        <!-- Hidden File Input for file manager -->
+        <input type="file" id="fileInput" accept="image/*" required hidden>
 
       </form>
-
-      <div class="mt-2 small-muted">Tip: Click the dashed box to use camera. If camera blocked, you'll get the file picker. Use the Upload button to pick files manually.</div>
-
     </div>
 
     <div class="row g-3">
@@ -183,182 +156,46 @@
         <div class="card card-custom p-3 text-center">
           <h6 class="text-start mb-3 card-title mt-0 text-dark m-0 p-0 fs-6">Preview</h6>
           <img id="preview" class="preview-img imgHeight" src="assets/img/preview.png" alt="Preview will appear here">
-          <canvas id="previewPdf" style="display:none; width:100%; border-radius:12px;"></canvas>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Camera Modal -->
-  <div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content p-3">
-        <div class="modal-header">
-          <h6 class="modal-title">Capture Image</h6>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" id="cameraModalClose"></button>
-        </div>
-        <div class="modal-body text-center">
-          <div id="cameraError" class="alert alert-warning" style="display:none;"></div>
-          <video id="cameraStream" autoplay playsinline></video>
-          <canvas id="cameraCanvas" class="d-none"></canvas>
-          <div id="cameraPermissionInfo" class="mt-2 small-muted" style="display:none;">
-            Please allow camera access in your browser. Click the lock icon in the address bar → Site settings → Allow camera, then reload.
-          </div>
-        </div>
-        <div class="modal-footer d-flex justify-content-between">
-          <div>
-            <button id="openSettingsBtn" class="btn btn-outline-secondary btn-sm" style="display:none;">How to allow camera</button>
-          </div>
-          <div>
-            <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-            <button id="captureBtn" class="btn btn-primary btn-sm">Capture</button>
-          </div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    // Elements
+    const uploadForm = document.getElementById("uploadForm");
     const fileInput = document.getElementById("fileInput");
+    const cameraInput = document.getElementById("cameraInput");
     const previewImg = document.getElementById("preview");
-    const previewPdf = document.getElementById("previewPdf");
 
-    const uploadBox = document.getElementById("uploadBox");
-    const openFileBtn = document.getElementById("openFileBtn");
-    const processBtn = document.getElementById("processBtn");
-
-    // Camera modal elements
-    const cameraModalEl = document.getElementById('cameraModal');
-    const cameraModal = new bootstrap.Modal(cameraModalEl);
-    const cameraStream = document.getElementById("cameraStream");
-    const cameraCanvas = document.getElementById("cameraCanvas");
-    const captureBtn = document.getElementById("captureBtn");
-    const cameraError = document.getElementById("cameraError");
-    const cameraPermissionInfo = document.getElementById("cameraPermissionInfo");
-    const openSettingsBtn = document.getElementById("openSettingsBtn");
-    const cameraModalClose = document.getElementById("cameraModalClose");
-
-    let stream = null;
-    let cameraActive = false;
-
-    // localStorage values
     let sucCode = localStorage.getItem("sucCode") || "";
     let examID = localStorage.getItem("examId") || "";
 
-    // -------------- Behavior: click dashed box -> camera (fallback to file) ----------------
-    async function openCameraOrFallback() {
-      cameraError.style.display = 'none';
-      cameraPermissionInfo.style.display = 'none';
-      openSettingsBtn.style.display = 'none';
+    // Camera capture
+    cameraInput.addEventListener("change", () => {
+      const file = cameraInput.files[0];
+      if (!file) return;
 
-      try {
-        // Try to start camera (will prompt if needed)
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        cameraStream.srcObject = stream;
-        cameraActive = true;
-        cameraModal.show();
-      } catch (err) {
-        // Fallback: open file picker if no camera or permission denied
-        console.warn("Camera start error, falling back to file picker:", err);
-        // Show a small friendly message in the modal if we want, but user asked fallback automatically
-        fileInput.click();
-      }
-    }
+      previewImg.style.display = "block";
+      previewImg.src = URL.createObjectURL(file);
 
-    // -------------- Open File chooser when Upload button clicked ----------------
-    openFileBtn.addEventListener('click', () => {
-      fileInput.click();
+      // Also set the file in the main upload input for submission
+      fileInput.files = cameraInput.files;
     });
 
-    // -------------- Capture button in camera modal ----------------
-    captureBtn.addEventListener('click', () => {
-      if (!stream) {
-        cameraError.style.display = 'block';
-        cameraError.innerText = 'Camera not active.';
-        return;
-      }
-      const video = cameraStream;
-      cameraCanvas.width = video.videoWidth || 1280;
-      cameraCanvas.height = video.videoHeight || 720;
-      const ctx = cameraCanvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, cameraCanvas.width, cameraCanvas.height);
-
-      cameraCanvas.toBlob(blob => {
-        if (!blob) {
-          alert('Capture failed.');
-          return;
-        }
-        const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        fileInput.files = dt.files;
-
-        // Update preview
-        previewImg.src = URL.createObjectURL(file);
-        previewImg.style.display = 'block';
-        previewPdf.style.display = 'none';
-      }, 'image/jpeg', 0.95);
-
-      stopCamera();
-      cameraModal.hide();
-    });
-
-    // -------------- Stop camera safely ----------------
-    function stopCamera() {
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-        stream = null;
-      }
-      cameraActive = false;
-    }
-
-    // Stop camera when modal closed (via close button or backdrop)
-    cameraModalEl.addEventListener('hidden.bs.modal', () => {
-      stopCamera();
-    });
-    cameraModalClose.addEventListener('click', () => stopCamera());
-
-    // -------------- File input change: show preview (image or PDF) ----------------
-    fileInput.addEventListener('change', () => {
+    // File manager (existing upload) - preview logic
+    fileInput.addEventListener("change", () => {
       const file = fileInput.files[0];
       if (!file) return;
 
-      previewPdf.style.display = 'none';
-      previewImg.style.display = 'none';
-
-      if (file.type === 'application/pdf') {
-        // render first page using pdf.js
-        const reader = new FileReader();
-        reader.onload = function () {
-          const typedarray = new Uint8Array(this.result);
-          pdfjsLib.getDocument(typedarray).promise
-            .then(pdf => pdf.getPage(1))
-            .then(page => {
-              const viewport = page.getViewport({ scale: 1.5 });
-              const canvas = previewPdf;
-              const context = canvas.getContext("2d");
-              canvas.width = viewport.width;
-              canvas.height = viewport.height;
-              canvas.style.display = 'block';
-              page.render({ canvasContext: context, viewport: viewport });
-            }).catch(err => console.error('PDF render error:', err));
-        };
-        reader.readAsArrayBuffer(file);
-      } else if (file.type.startsWith('image/')) {
-        previewImg.style.display = 'block';
-        previewImg.src = URL.createObjectURL(file);
-      } else {
-        alert('Please upload an image or PDF only.');
-        fileInput.value = '';
-      }
+      previewImg.style.display = "block";
+      previewImg.src = URL.createObjectURL(file);
     });
 
-    // -------------- Process button: submit to your API (keeps original logic) ----------------
-    processBtn.addEventListener('click', async () => {
+    // Upload form submit
+    uploadForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
       const file = fileInput.files[0];
-      if (!file) return alert("Please upload or capture an image/PDF first!");
+      if (!file) return alert("Please upload an image first!");
 
       const apiBase = "https://w.aditya.ac.in/omrapi";
       const formData = new FormData();
@@ -372,34 +209,20 @@
         if (!res.ok) throw new Error("Processing failed!");
         const data = await res.json();
 
-        // Store response and redirect (same as before)
+        // Store response in localStorage to use in result.html
         localStorage.setItem("omrResultData", JSON.stringify(data));
+
+        // Update sucCode & examID in localStorage
         localStorage.setItem("sucCode", data.suc);
         localStorage.setItem("examId", data.examID);
 
+        // Redirect to result.html
         window.location.href = "result.html";
       } catch (err) {
         alert("Error: " + (err.message || JSON.stringify(err)));
         console.error(err);
       }
     });
-
-    // -------------- Optional: small permission check on load to hint user ----------------
-    (async function checkPermissionOnLoad() {
-      try {
-        if (navigator.permissions && navigator.permissions.query) {
-          const perm = await navigator.permissions.query({ name: 'camera' }).catch(() => null);
-          if (perm && perm.state === 'denied') {
-            const hint = document.createElement('div');
-            hint.className = 'small-muted mt-2';
-            hint.innerText = 'Camera access is currently blocked for this site. Use "Upload" to pick files or allow camera in site settings.';
-            uploadBox.appendChild(hint);
-          }
-        }
-      } catch (err) {
-        // ignore
-      }
-    })();
   </script>
 
   <script src="assets/vendor/apexcharts/apexcharts.min.js"></script>
@@ -416,4 +239,3 @@
 </body>
 
 </html>
-
