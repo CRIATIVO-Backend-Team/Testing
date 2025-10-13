@@ -4,21 +4,39 @@
 <head>
   <meta charset="UTF-8">
   <title>OMR Sheet Processor</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <!-- AngularJS + QR Scanner -->
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-  <link href="https://fonts.googleapis.com/css?family=Nunito:400,600,700&display=swap" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.gstatic.com" rel="preconnect">
+  <link
+    href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i"
+    rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
   <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
+  <link href="assets/vendor/quill/quill.snow.css" rel="stylesheet">
+  <link href="assets/vendor/quill/quill.bubble.css" rel="stylesheet">
+  <link href="assets/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <link href="assets/vendor/simple-datatables/style.css" rel="stylesheet">
+
+  <!-- Template Main CSS File -->
   <link href="assets/css/style.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   <style>
     body {
       font-family: "Nunito", sans-serif;
       background: #f8f9fa;
+    }
+
+    h6 {
+      font-weight: 600;
     }
 
     .card-custom {
@@ -40,9 +58,11 @@
       background-color: #f3f6f8;
     }
 
-    #cameraModal video {
-      width: 100%;
-      border-radius: 10px;
+    .btn-flex {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
     }
   </style>
 </head>
@@ -59,20 +79,21 @@
     <!-- Upload / Camera Section -->
     <div class="card card-body mb-4">
       <form id="uploadForm" class="p-1">
-        <h6 class="text-dark card-title mb-2 fs-6">Upload Key Sheets</h6>
+        <h6 class="text-dark card-title mb-2 fs-6">Upload Key Sheet</h6>
 
-        <!-- Upload Box -->
+        <!-- Dashed Upload Box -->
         <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
           style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6"
-          onclick="openUploadOptions()">
+          onclick="document.getElementById('fileInput').click();">
           <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
-          <p class="text-muted mb-0" style="font-size: 13px;">Click to upload or capture image</p>
+          <p class="text-muted mb-0" style="font-size: 13px;">Click to upload image</p>
         </div>
 
-        <div class="d-flex align-items-center gap-2 mt-3">
+        <!-- Upload & Camera Buttons -->
+        <div class="d-flex gap-2 mt-3">
           <button class="btn btn-outline-primary btn-sm flex-grow-1" type="submit">Upload</button>
-          <button type="button" class="btn btn-light text-primary d-flex align-items-center justify-content-center p-2"
-            style="height: 38px;" onclick="startCamera()">
+          <button type="button" class="btn btn-light text-primary btn-flex" style="flex:0 0 50px;"
+            onclick="openCameraModal()">
             <i class="bi bi-camera fs-5"></i>
           </button>
         </div>
@@ -86,7 +107,7 @@
       <div class="col-md-6 panel">
         <div class="card card-custom p-3 text-center">
           <h6 class="text-start mb-3 fs-6 text-dark">Preview</h6>
-          <img id="preview" class="preview-img imgHeight" src="assets/img/preview.png" alt="Preview will appear here">
+          <img id="preview" class="preview-img imgHeight" src="assets/img/preview.png" alt="Preview">
         </div>
       </div>
     </div>
@@ -101,7 +122,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body text-center">
-          <video id="cameraStream" autoplay playsinline></video>
+          <video id="cameraStream" autoplay playsinline style="width:100%; border-radius:10px;"></video>
           <canvas id="cameraCanvas" class="d-none"></canvas>
         </div>
         <div class="modal-footer d-flex justify-content-between">
@@ -117,38 +138,25 @@
     const fileInput = document.getElementById("fileInput");
     const previewImg = document.getElementById("preview");
 
-    const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
-    const cameraStream = document.getElementById("cameraStream");
-    const cameraCanvas = document.getElementById("cameraCanvas");
-    const captureBtn = document.getElementById("captureBtn");
+    let cameraStreamObj = null;
 
-    let cameraActive = false;
-    let stream = null;
-
-    // Open upload or camera options
-    function openUploadOptions() {
-      const choice = confirm("Click 'OK' to capture using camera, or 'Cancel' to upload an image/PDF.");
-      if (choice) {
-        startCamera();
-      } else {
-        fileInput.click();
-      }
+    function openCameraModal() {
+      const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
+      cameraModal.show();
+      startCamera();
     }
 
-    // Start Camera
     async function startCamera() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        cameraStream.srcObject = stream;
-        cameraModal.show();
-        cameraActive = true;
+        cameraStreamObj = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        document.getElementById("cameraStream").srcObject = cameraStreamObj;
       } catch (err) {
         alert("Camera access denied or not available!");
         console.error(err);
       }
     }
 
-    // Auto crop center square
+    // Auto center-crop square
     function autoCropSquare(sourceCanvas) {
       const size = Math.min(sourceCanvas.width, sourceCanvas.height);
       const startX = (sourceCanvas.width - size) / 2;
@@ -161,94 +169,44 @@
       return cropped;
     }
 
-    // Capture photo
-    captureBtn.addEventListener("click", () => {
-      if (!cameraActive) return;
+    // Capture photo button
+    document.getElementById("captureBtn").addEventListener("click", () => {
+      const video = document.getElementById("cameraStream");
+      const canvas = document.getElementById("cameraCanvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const ctx = cameraCanvas.getContext("2d");
-      cameraCanvas.width = cameraStream.videoWidth;
-      cameraCanvas.height = cameraStream.videoHeight;
-      ctx.drawImage(cameraStream, 0, 0, cameraCanvas.width, cameraCanvas.height);
-
-      const croppedCanvas = autoCropSquare(cameraCanvas);
+      const croppedCanvas = autoCropSquare(canvas);
       croppedCanvas.toBlob(blob => {
         const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-        fileInput.files = createFileList(file);
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        fileInput.files = dt.files;
         previewImg.src = URL.createObjectURL(file);
         previewImg.style.display = "block";
       });
 
-      stopCamera();
-      cameraModal.hide();
+      // Stop camera
+      cameraStreamObj.getTracks().forEach(track => track.stop());
+      bootstrap.Modal.getInstance(document.getElementById('cameraModal')).hide();
     });
 
-    function stopCamera() {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        cameraActive = false;
-      }
-    }
-
-    function createFileList(file) {
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(file);
-      return dataTransfer.files;
-    }
-
-    // Preview logic (image & PDF)
+    // File input preview
     fileInput.addEventListener("change", () => {
       const file = fileInput.files[0];
       if (!file) return;
-
-      previewImg.style.display = "none";
-
-      // PDF Preview
-      if (file.type === "application/pdf") {
-        let previewPdf = document.getElementById("previewPdf");
-        if (!previewPdf) {
-          previewPdf = document.createElement("canvas");
-          previewPdf.id = "previewPdf";
-          previewImg.parentElement.appendChild(previewPdf);
-        }
-
-        previewPdf.style.display = "block";
-
-        const reader = new FileReader();
-        reader.onload = function () {
-          const typedarray = new Uint8Array(this.result);
-          pdfjsLib.getDocument(typedarray).promise.then(pdf => {
-            pdf.getPage(1).then(page => {
-              const viewport = page.getViewport({ scale: 1.5 });
-              const canvas = previewPdf;
-              const context = canvas.getContext("2d");
-              canvas.width = viewport.width;
-              canvas.height = viewport.height;
-              page.render({ canvasContext: context, viewport: viewport });
-            });
-          });
-        };
-        reader.readAsArrayBuffer(file);
-
-      } else if (file.type.startsWith("image/")) {
-        previewImg.style.display = "block";
-        previewImg.src = URL.createObjectURL(file);
-
-        const previewPdf = document.getElementById("previewPdf");
-        if (previewPdf) previewPdf.style.display = "none";
-
-      } else {
-        alert("Please upload an image or PDF only.");
-        fileInput.value = "";
-      }
+      previewImg.style.display = "block";
+      previewImg.src = URL.createObjectURL(file);
     });
 
-    // Upload handler
+    // Form submit
     uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const file = fileInput.files[0];
       if (!file) return alert("Please upload or capture an image first!");
 
-      const apiBase = "https://w.aditya.ac.in/omrapi";
       const formData = new FormData();
       formData.append("file", file);
 
@@ -256,7 +214,7 @@
         const sucCode = localStorage.getItem("sucCode") || "12346";
         const examID = localStorage.getItem("examId") || "ew123";
 
-        const res = await fetch(`${apiBase}/process/${sucCode}/${examID}`, {
+        const res = await fetch(`https://w.aditya.ac.in/omrapi/process/${sucCode}/${examID}`, {
           method: "POST",
           body: formData
         });
@@ -279,4 +237,3 @@
   <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
