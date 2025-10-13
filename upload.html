@@ -5,44 +5,24 @@
   <meta charset="UTF-8">
   <title>OMR Sheet Processor</title>
 
-  <!-- AngularJS + QR Scanner -->
+  <!-- AngularJS + PDF.js -->
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-  <!-- Google Fonts -->
-  <link href="https://fonts.gstatic.com" rel="preconnect">
-  <link
-    href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i"
-    rel="stylesheet">
-
-  <!-- Vendor CSS Files -->
+  <!-- Bootstrap -->
   <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-  <link href="assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
-  <link href="assets/vendor/quill/quill.snow.css" rel="stylesheet">
-  <link href="assets/vendor/quill/quill.bubble.css" rel="stylesheet">
-  <link href="assets/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link href="assets/vendor/simple-datatables/style.css" rel="stylesheet">
 
-  <!-- Template Main CSS File -->
-  <link href="assets/css/style.css" rel="stylesheet">
+  <!-- jscanify -->
+  <script src="https://docs.opencv.org/4.7.0/opencv.js" async></script>
+  <script src="https://cdn.jsdelivr.net/gh/ColonelParrot/jscanify@master/src/jscanify.min.js"></script>
+
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   <style>
     body {
       font-family: "Nunito", sans-serif;
       background: #f8f9fa;
-    }
-
-    h6 {
-      font-weight: 600;
-    }
-
-    .card-custom {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      background: #fff;
-      margin-bottom: 1rem;
     }
 
     .preview-img {
@@ -69,17 +49,11 @@
 
 <body>
   <div class="container py-4">
-    <div class="d-flex justify-content-between pagetitle align-items-center">
-      <h1 class="text-start fs-4">OMR Sheet Processor</h1>
-      <div class="text-end">
-        <button class="btn btn-primary btn-sm">Next</button>
-      </div>
-    </div>
+    <h1 class="fs-4 mb-3">OMR Sheet Processor</h1>
 
-    <!-- Upload / Camera Section -->
     <div class="card card-body mb-4">
       <form id="uploadForm" class="p-1">
-        <h6 class="text-dark card-title mb-2 fs-6">Upload Key Sheet</h6>
+        <h6 class="mb-2">Upload Key Sheet</h6>
 
         <!-- Dashed Upload Box -->
         <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
@@ -102,14 +76,10 @@
       </form>
     </div>
 
-    <!-- Preview Panel -->
-    <div class="row g-3">
-      <div class="col-md-6 panel">
-        <div class="card card-custom p-3 text-center">
-          <h6 class="text-start mb-3 fs-6 text-dark">Preview</h6>
-          <img id="preview" class="preview-img imgHeight" src="assets/img/preview.png" alt="Preview">
-        </div>
-      </div>
+    <!-- Preview -->
+    <div class="card card-custom p-3 text-center mb-3">
+      <h6 class="text-start mb-3 fs-6">Preview</h6>
+      <img id="preview" class="preview-img imgHeight" src="assets/img/preview.png" alt="Preview">
     </div>
   </div>
 
@@ -133,13 +103,22 @@
     </div>
   </div>
 
-  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-
   <script>
     const uploadForm = document.getElementById("uploadForm");
     const fileInput = document.getElementById("fileInput");
     const previewImg = document.getElementById("preview");
     let cameraStreamObj = null;
+    let scanner;
+
+    // Wait for OpenCV & jscanify to load
+    function initScanner() {
+      if (typeof jscanify === "undefined") {
+        setTimeout(initScanner, 100);
+        return;
+      }
+      scanner = new jscanify();
+    }
+    initScanner();
 
     function openCameraModal() {
       const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
@@ -157,18 +136,13 @@
       }
     }
 
-    function autoCropSquare(sourceCanvas) {
-      const size = Math.min(sourceCanvas.width, sourceCanvas.height);
-      const startX = (sourceCanvas.width - size) / 2;
-      const startY = (sourceCanvas.height - size) / 2;
-      const cropped = document.createElement('canvas');
-      cropped.width = size;
-      cropped.height = size;
-      const ctx = cropped.getContext('2d');
-      ctx.drawImage(sourceCanvas, startX, startY, size, size, 0, 0, size, size);
-      return cropped;
+    function processWithScanner(imgElement) {
+      if (!scanner) return imgElement;
+      const resultCanvas = scanner.extractPaper(imgElement, 500, 1000);
+      return resultCanvas;
     }
 
+    // Capture photo
     document.getElementById("captureBtn").addEventListener("click", () => {
       const video = document.getElementById("cameraStream");
       const canvas = document.getElementById("cameraCanvas");
@@ -177,27 +151,40 @@
       const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const croppedCanvas = autoCropSquare(canvas);
-      croppedCanvas.toBlob(blob => {
+      // Process with jscanify
+      const resultCanvas = processWithScanner(canvas);
+      resultCanvas.toBlob(blob => {
         const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
         const dt = new DataTransfer();
         dt.items.add(file);
         fileInput.files = dt.files;
         previewImg.src = URL.createObjectURL(file);
-        previewImg.style.display = "block";
       });
 
+      // Stop camera
       cameraStreamObj.getTracks().forEach(track => track.stop());
       bootstrap.Modal.getInstance(document.getElementById('cameraModal')).hide();
     });
 
+    // File input preview & auto crop
     fileInput.addEventListener("change", () => {
       const file = fileInput.files[0];
       if (!file) return;
-      previewImg.style.display = "block";
-      previewImg.src = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = function () {
+        const resultCanvas = processWithScanner(img);
+        resultCanvas.toBlob(blob => {
+          const file = new File([blob], "upload.jpg", { type: "image/jpeg" });
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          fileInput.files = dt.files;
+          previewImg.src = URL.createObjectURL(file);
+        });
+      };
+      img.src = URL.createObjectURL(file);
     });
 
+    // Upload form
     uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const file = fileInput.files[0];
@@ -229,5 +216,7 @@
       }
     });
   </script>
+
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
