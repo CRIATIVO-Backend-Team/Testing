@@ -6,6 +6,31 @@
   <title>OMR Sheet Processor - Result</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+
+  <!-- AngularJS + QR Scanner -->
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.gstatic.com" rel="preconnect">
+  <link
+    href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i"
+    rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
+  <link href="assets/vendor/quill/quill.snow.css" rel="stylesheet">
+  <link href="assets/vendor/quill/quill.bubble.css" rel="stylesheet">
+  <link href="assets/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <link href="assets/vendor/simple-datatables/style.css" rel="stylesheet">
+
+  <!-- Template Main CSS File -->
+  <link href="assets/css/style.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
   <!-- Vendor CSS -->
   <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
@@ -17,12 +42,7 @@
       background: #f8f9fa;
     }
 
-    .card-custom {
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      background: #fff;
-      margin-bottom: 1rem;
-    }
+
 
     .result-img {
       width: 100%;
@@ -46,23 +66,33 @@
       color: #dc3545;
       background: #fdecea;
     }
+
+    .imgHeight {
+      height: 150px;
+      background-color: #f3f6f8;
+    }
   </style>
 </head>
 
 <body>
   <div class="container py-4">
 
-    <h1 class="fs-4 mb-4">OMR Sheet Processed Result</h1>
+    <div class="d-flex justify-content-center pagetitle align-items-center">
+      <h1 class="text-start fs-4">
+        <!-- <i class="bi bi-file-earmark-text-fill text-secondary"></i> -->
+        OMR Sheet Processor
+      </h1>
+    </div>
 
     <!-- Processed Image -->
-    <div class="card card-custom p-3 mb-4 text-center">
-      <h6 class="text-start mb-2">Processed Sheet</h6>
-      <img id="resultImg" class="result-img" src="assets/img/processed.png" alt="Processed image">
+    <div class="card card-custom card-body mb-4">
+      <h6 class="text-dark card-title mb-2 fs-6">Processed Sheet</h6>
+      <img id="resultImg" class="result-img imgHeight" src="assets/img/preview.png" alt="Processed image">
     </div>
 
     <!-- Exam Info -->
-    <div class="card card-custom p-3 mb-4">
-      <h6 class="text-dark mb-2">Exam Info</h6>
+    <div class="card card-custom  card-body mb-4">
+      <h6 class="text-dark card-title mb-2 fs-6">Exam Info</h6>
       <div class="d-flex justify-content-between">
         <div>
           <span class="fw-semibold text-muted" style="font-size: 12px;">SUC Code:</span>
@@ -78,7 +108,7 @@
     <!-- Detected Answers Table -->
     <div class="card card-custom p-4 mb-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="text-dark mb-0">Detected Answers</h6>
+        <h6 class="text-dark card-title mb-2 fs-6">Detected Answers</h6>
         <div>
           <button id="editBtn" class="btn btn-sm btn-outline-primary">Edit</button>
           <button id="submitBtn" class="btn btn-sm btn-success" disabled>Submit</button>
@@ -92,7 +122,25 @@
               <th>Answer(s)</th>
             </tr>
           </thead>
-          <tbody></tbody>
+          <tbody>
+            <tr>
+              <td class="text-center border">1</td>
+              <td class="text-center border">
+                <span class="badge  d-inline-flex align-items-center gap-1" style="color: #2eca6a;background: #e0f8e9;">
+                  <i class="bi bi-check-circle-fill"></i> A
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-center border">1</td>
+              <td class="text-center border">
+                <span class="badge  d-inline-flex align-items-center gap-1 mt-1" style="color: #ff771d;background: #ffecdf;">
+                  <i class="bi bi-x-circle-fill"></i> Not Answered
+                </span>
+              </td>
+            </tr>
+
+          </tbody>
         </table>
       </div>
     </div>
@@ -211,4 +259,5 @@
   </script>
 
 </body>
+
 </html>
