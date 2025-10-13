@@ -39,21 +39,17 @@
     }
 
     .preview-img {
-        width: 100%;
-        border-radius: 12px;
-        border: 2px dashed #dee2e6;
-        max-height: 600px;
-        height: auto;
-        object-fit: contain;
-        transition: height 0.3s ease;
+      width: 100%;
+      border-radius: 12px;
+      border: 2px dashed #dee2e6;
+      max-height: 600px;
+      height: auto;
+      object-fit: contain;
+      transition: height 0.3s ease;
     }
 
-    button.btn-sm, .btn-sm-custom, .btn-flex {
-      padding: 0.25rem 0.4rem; 
-      font-size: 0.85rem;      
-    }
     .imgHeight {
-      height: 250px;
+      height: 150px;
       background-color: #f3f6f8;
     }
 
@@ -132,11 +128,22 @@
 
 <body>
   <div class="container py-4">
-    <h1 class="fs-4 mb-3">OMR Sheet Processor</h1>
+    <div class="d-flex justify-content-between pagetitle align-items-center">
+      <h1 class="text-start fs-4">
+        <!-- <i class="bi bi-file-earmark-text-fill text-secondary"></i> -->
+        OMR Sheet Processor
+      </h1>
+
+      <div class="text-end">
+          <button class="btn btn-primary btn-sm">
+            Next
+          </button>
+        </div>
+    </div>
 
     <div class="card card-body mb-4">
       <form id="uploadForm" class="p-1">
-        <h6 class="mb-3 mt-3">Upload Key Sheet</h6>
+        <h6 class="text-dark card-title mb-3 mt-3">Upload Key Sheet</h6>
 
         <!-- Dashed Upload Box -->
         <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
@@ -163,6 +170,15 @@
     <div class="card card-custom p-3 text-center mb-3">
       <h6 class="text-start mb-3 fs-6">Preview</h6>
       <img id="preview" class="preview-img imgHeight" src="assets/img/preview.png" alt="Preview">
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-6 panel">
+        <div class="card card-custom p-3 text-center">
+          <h6 class="text-start mb-3 card-title mt-0 text-dark m-0 p-0 fs-6">Preview</h6>
+          <img id="preview" class="preview-img imgHeight" src="assets/img/preview.png" alt="Preview will appear here">
+        </div>
+      </div>
     </div>
   </div>
 
@@ -300,12 +316,5 @@
     });
   </script>
 </body>
+
 </html>
-
-
-
-
-
-
-
-
