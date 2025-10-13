@@ -57,23 +57,20 @@
       </div>
     </div>
 
-    <!-- Upload / Camera Section -->
     <div class="card card-body mb-4">
       <form id="uploadForm" class="p-1">
         <h6 class="text-dark card-title mb-2 fs-6">Upload Key Sheet</h6>
 
-        <!-- Upload Box -->
         <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
-          style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6"
-          onclick="openUploadOptions()">
+          style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6" onclick="openUploadOptions()">
           <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
           <p class="text-muted mb-0" style="font-size: 13px;">Click to upload or capture image</p>
         </div>
 
         <div class="d-flex align-items-center gap-2 mt-3">
           <button class="btn btn-outline-primary btn-sm flex-grow-1" type="submit">Upload</button>
-          <button type="button" class="btn btn-light text-primary d-flex align-items-center justify-content-center p-2"
-            style="height: 38px;" onclick="startCamera()">
+          <button class="btn btn-light text-primary d-flex align-items-center justify-content-center p-2"
+            style="height: 38px;">
             <i class="bi bi-camera fs-5"></i>
           </button>
         </div>
@@ -82,19 +79,16 @@
       </form>
     </div>
 
-    <!-- Preview Panel -->
     <div class="row g-3">
       <div class="col-md-6 panel">
         <div class="card card-custom p-3 text-center">
           <h6 class="text-start mb-3 fs-6 text-dark">Preview</h6>
-          <img id="preview" class="preview-img imgHeight" src="assets/img/preview.png"
-            alt="Preview will appear here">
+          <img id="preview" class="preview-img imgHeight" src="assets/img/preview.png" alt="Preview will appear here">
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Camera Modal -->
   <div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content p-3">
@@ -127,14 +121,15 @@
     let cameraActive = false;
     let stream = null;
 
-    // Open upload or camera options
     function openUploadOptions() {
       const choice = confirm("Click 'OK' to capture using camera, or 'Cancel' to upload an image.");
-      if (choice) startCamera();
-      else fileInput.click();
+      if (choice) {
+        startCamera();
+      } else {
+        fileInput.click();
+      }
     }
 
-    // Start Camera
     async function startCamera() {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -147,32 +142,42 @@
       }
     }
 
-    // Capture photo with auto-crop
-    captureBtn.addEventListener("click", () => {
+    // Auto-crop central region (trim edges)
+    function autoCrop(imageBitmap) {
+      const offCanvas = document.createElement("canvas");
+      const offCtx = offCanvas.getContext("2d");
+
+      const cropRatio = 0.85; // crop to 85% of the frame (centered)
+      const cropWidth = imageBitmap.width * cropRatio;
+      const cropHeight = imageBitmap.height * cropRatio;
+      const x = (imageBitmap.width - cropWidth) / 2;
+      const y = (imageBitmap.height - cropHeight) / 2;
+
+      offCanvas.width = cropWidth;
+      offCanvas.height = cropHeight;
+      offCtx.drawImage(imageBitmap, x, y, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+      return offCanvas;
+    }
+
+    captureBtn.addEventListener("click", async () => {
       if (!cameraActive) return;
 
-      const ctx = cameraCanvas.getContext("2d");
-      cameraCanvas.width = cameraStream.videoWidth;
-      cameraCanvas.height = cameraStream.videoHeight;
-      ctx.drawImage(cameraStream, 0, 0, cameraCanvas.width, cameraCanvas.height);
+      const track = stream.getVideoTracks()[0];
+      const imageCapture = new ImageCapture(track);
+      try {
+        const bitmap = await imageCapture.grabFrame();
+        const croppedCanvas = autoCrop(bitmap);
 
-      // Auto-crop: center square crop
-      const size = Math.min(cameraCanvas.width, cameraCanvas.height);
-      const startX = (cameraCanvas.width - size) / 2;
-      const startY = (cameraCanvas.height - size) / 2;
+        croppedCanvas.toBlob((blob) => {
+          const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+          fileInput.files = createFileList(file);
+          previewImg.src = URL.createObjectURL(file);
+          previewImg.style.display = "block";
+        }, "image/jpeg");
 
-      const cropCanvas = document.createElement("canvas");
-      cropCanvas.width = size;
-      cropCanvas.height = size;
-      const cropCtx = cropCanvas.getContext("2d");
-      cropCtx.drawImage(cameraCanvas, startX, startY, size, size, 0, 0, size, size);
-
-      cropCanvas.toBlob((blob) => {
-        const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-        fileInput.files = createFileList(file);
-        previewImg.src = URL.createObjectURL(file);
-        previewImg.style.display = "block";
-      }, "image/jpeg", 0.9);
+      } catch (err) {
+        console.error("Capture failed:", err);
+      }
 
       stopCamera();
       cameraModal.hide();
@@ -191,7 +196,6 @@
       return dataTransfer.files;
     }
 
-    // Image preview logic
     fileInput.addEventListener("change", () => {
       const file = fileInput.files[0];
       if (!file) return;
@@ -199,7 +203,6 @@
       previewImg.style.display = "block";
     });
 
-    // Upload handler
     uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const file = fileInput.files[0];
@@ -235,4 +238,5 @@
 
   <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
