@@ -5,6 +5,10 @@
   <meta charset="UTF-8">
   <title>OMR Sheet Processor</title>
 
+  <!-- Bootstrap -->
+  <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" /> -->
+
   <!-- AngularJS + QR Scanner -->
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
@@ -40,6 +44,7 @@
     }
 
     .card-custom {
+      /* border-radius: 16px; */
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       background: #fff;
       margin-bottom: 1rem;
@@ -62,6 +67,7 @@
       border: 2px dashed #dee2e6;
       height: 260px;
       object-fit: contain;
+      /* background: #f6f6fe; */
     }
 
     /* Floating QR Button */
@@ -110,45 +116,53 @@
 <body>
   <div class="container py-4">
 
+
+
     <div class="d-flex justify-content-between pagetitle align-items-center">
       <h1 class="text-start fs-4">
+        <!-- <i class="bi bi-file-earmark-text-fill text-secondary"></i> -->
         OMR Sheet Processor
       </h1>
 
       <div class="text-end">
-        <button class="btn btn-primary btn-sm">
-          Next
-        </button>
-      </div>
+          <button class="btn btn-primary btn-sm">
+            Next
+          </button>
+        </div>
     </div>
+
+
 
     <!-- Upload / Camera Section -->
     <div class="card card-body mb-4">
+
       <form id="uploadForm" class="p-1">
 
         <!-- Heading -->
-        <h6 class="text-dark card-title mb-2 fs-6">Upload Key Sheets</h6>
+        <h6 class="text-dark card-title mb-2 fs-6">Upload Key Sheet</h6>
 
-        <!-- Dashed Upload Box (Camera) -->
+        <!-- Dashed Upload Box -->
         <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
-             style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6"
-             onclick="cameraInput.click();">
-          <i class="bi bi-camera fs-1 text-primary"></i>
-          <p class="text-muted mb-0" style="font-size: 13px;">Click to capture image</p>
+          style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6"
+          onclick="document.getElementById('fileInput').click();">
+          <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
+          <p class="text-muted mb-0" style="font-size: 13px;">Click to upload image</p>
         </div>
 
-        <!-- Hidden Camera Input -->
-        <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
 
         <div>
           <button class="btn btn-outline-primary btn-sm mt-3 w-100" type="submit">
             Upload
           </button>
         </div>
-        <!-- Hidden File Input for file manager -->
+        <!-- Hidden File Input -->
         <input type="file" id="fileInput" accept="image/*" required hidden>
 
       </form>
+
+      <!-- <div id="resultSpinner" class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div> -->
     </div>
 
     <div class="row g-3">
@@ -164,38 +178,54 @@
   <script>
     const uploadForm = document.getElementById("uploadForm");
     const fileInput = document.getElementById("fileInput");
-    const cameraInput = document.getElementById("cameraInput");
     const previewImg = document.getElementById("preview");
+    const previewPdf = document.getElementById("previewPdf");
 
     let sucCode = localStorage.getItem("sucCode") || "";
     let examID = localStorage.getItem("examId") || "";
 
-    // Camera capture
-    cameraInput.addEventListener("change", () => {
-      const file = cameraInput.files[0];
-      if (!file) return;
-
-      previewImg.style.display = "block";
-      previewImg.src = URL.createObjectURL(file);
-
-      // Also set the file in the main upload input for submission
-      fileInput.files = cameraInput.files;
-    });
-
-    // File manager (existing upload) - preview logic
+    // Preview logic (image & PDF)
     fileInput.addEventListener("change", () => {
       const file = fileInput.files[0];
       if (!file) return;
 
-      previewImg.style.display = "block";
-      previewImg.src = URL.createObjectURL(file);
+      previewImg.style.display = "none";
+      if (previewPdf) previewPdf.style.display = "none";
+
+      if (file.type === "application/pdf") {
+        if (!previewPdf) return;
+        previewPdf.style.display = "block";
+
+        const reader = new FileReader();
+        reader.onload = function () {
+          const typedarray = new Uint8Array(this.result);
+          pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+            pdf.getPage(1).then(page => {
+              const viewport = page.getViewport({ scale: 1.5 });
+              const canvas = previewPdf;
+              const context = canvas.getContext("2d");
+              canvas.width = viewport.width;
+              canvas.height = viewport.height;
+              page.render({ canvasContext: context, viewport: viewport });
+            });
+          });
+        };
+        reader.readAsArrayBuffer(file);
+
+      } else if (file.type.startsWith("image/")) {
+        previewImg.style.display = "block";
+        previewImg.src = URL.createObjectURL(file);
+      } else {
+        alert("Please upload an image or PDF only.");
+        fileInput.value = "";
+      }
     });
 
     // Upload form submit
     uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const file = fileInput.files[0];
-      if (!file) return alert("Please upload an image first!");
+      if (!file) return alert("Please upload an image or PDF first!");
 
       const apiBase = "https://w.aditya.ac.in/omrapi";
       const formData = new FormData();
@@ -224,6 +254,7 @@
       }
     });
   </script>
+
 
   <script src="assets/vendor/apexcharts/apexcharts.min.js"></script>
   <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
