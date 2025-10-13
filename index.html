@@ -92,10 +92,10 @@
 
             <!-- Manual Input -->
             <div class="mt-1">
-              <label class="form-label mb-1" style="font-size: small;">Enter Exam Id</label>
+              <label class="form-label mb-1" >Enter Exam Id</label>
               <input type="text" class="form-control" placeholder="Enter Exam ID" ng-model="examId" />
 
-              <label class="form-label mb-1 mt-3" style="font-size: small;">Enter SUC Code</label>
+              <label class="form-label mb-1 mt-3" >Enter SUC Code</label>
               <div class="d-flex gap-3">
                 <input type="text" class="form-control" placeholder="Enter SUC Code manually" ng-model="sucCode" ng-change="storeSuc()" />
                 <div class="btn btn-light p-1 px-2" ng-click="startQrScanner()">
@@ -106,7 +106,7 @@
 
             <!-- Next Button -->
             <div class="text-center mt-3">
-              <button class="btn btn-success w-100" ng-click="nextStep()" ng-disabled="!examId || !sucCode">
+              <button class="btn btn-primary w-100" ng-click="nextStep()" ng-disabled="!examId || !sucCode">
                 Next
               </button>
             </div>
@@ -220,4 +220,3 @@
   <script src="assets/js/main.js"></script>
 </body>
 </html>
-
