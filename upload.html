@@ -62,20 +62,16 @@
       <form id="uploadForm" class="p-1">
         <h6 class="text-dark card-title mb-2 fs-6">Upload Key Sheet</h6>
 
-        <!-- Upload Box -->
+        <!-- Upload Box (Click to open camera or fallback to file picker) -->
         <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
-          style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6"
-          onclick="openUploadOptions()">
-          <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
-          <p class="text-muted mb-0" style="font-size: 13px;">Click to upload or capture image</p>
+             style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6"
+             onclick="openCameraOrFile()">
+          <i class="bi bi-camera fs-1 text-primary"></i>
+          <p class="text-muted mb-0" style="font-size: 13px;">Click to capture or upload image</p>
         </div>
 
         <div class="d-flex align-items-center gap-2 mt-3">
           <button class="btn btn-outline-primary btn-sm flex-grow-1" type="submit">Upload</button>
-          <button type="button" class="btn btn-light text-primary d-flex align-items-center justify-content-center p-2"
-            style="height: 38px;" onclick="startCamera()">
-            <i class="bi bi-camera fs-5"></i>
-          </button>
         </div>
 
         <input type="file" id="fileInput" accept="image/*" hidden>
@@ -106,7 +102,7 @@
           <canvas id="cameraCanvas" class="d-none"></canvas>
         </div>
         <div class="modal-footer d-flex justify-content-between">
-          <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" onclick="stopCamera()">Cancel</button>
           <button id="captureBtn" class="btn btn-primary btn-sm">Capture</button>
         </div>
       </div>
@@ -123,69 +119,54 @@
     const cameraCanvas = document.getElementById("cameraCanvas");
     const captureBtn = document.getElementById("captureBtn");
 
-    let cameraActive = false;
     let stream = null;
 
-    // ✅ Open upload or camera options
-    function openUploadOptions() {
-      const choice = confirm("Click 'OK' to capture using camera, or 'Cancel' to upload an image.");
-      if (choice) {
-        startCamera();
-      } else {
+    // Click dashed box: open camera or fallback to file picker
+    async function openCameraOrFile() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        cameraStream.srcObject = stream;
+        cameraModal.show();
+      } catch (err) {
+        console.warn("Camera not available, opening file picker.", err);
         fileInput.click();
       }
     }
 
-    // ✅ Start Camera
-    async function startCamera() {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        cameraStream.srcObject = stream;
-        cameraModal.show();
-        cameraActive = true;
-      } catch (err) {
-        alert("Camera access denied or not available!");
-        console.error(err);
-      }
-    }
-
-    // ✅ Capture photo from camera
+    // Capture photo
     captureBtn.addEventListener("click", () => {
-      if (!cameraActive) return;
+      if (!stream) return;
 
       const ctx = cameraCanvas.getContext("2d");
       cameraCanvas.width = cameraStream.videoWidth;
       cameraCanvas.height = cameraStream.videoHeight;
       ctx.drawImage(cameraStream, 0, 0, cameraCanvas.width, cameraCanvas.height);
 
-      // Convert canvas to blob and create file
       cameraCanvas.toBlob((blob) => {
-        if (!blob) return;
         const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-
-        // ✅ Create a FileList object so it behaves like an uploaded file
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
-        fileInput.files = dataTransfer.files;
-
-        // ✅ Show preview immediately
+        fileInput.files = createFileList(file);
         previewImg.src = URL.createObjectURL(file);
         previewImg.style.display = "block";
-      }, "image/jpeg");
+      });
 
       stopCamera();
       cameraModal.hide();
     });
 
-    // ✅ Stop camera
     function stopCamera() {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
-        cameraActive = false;
+        stream = null;
       }
     }
 
-    // ✅ Preview selected upload file
+    function createFileList(file) {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      return dataTransfer.files;
+    }
+
+    // File picker preview
     fileInput.addEventListener("change", () => {
       const file = fileInput.files[0];
       if (!file) return;
@@ -193,7 +174,7 @@
       previewImg.style.display = "block";
     });
 
-    // ✅ Handle upload
+    // Form submission
     uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const file = fileInput.files[0];
