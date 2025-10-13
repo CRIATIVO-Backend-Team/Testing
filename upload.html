@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <title>OMR Sheet Processor</title>
 
-  <!-- AngularJS + QR Scanner -->
+  <!-- AngularJS + QR Scanner + pdf.js -->
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -40,6 +40,7 @@
     }
 
     .card-custom {
+      /* border-radius: 16px; */
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       background: #fff;
       margin-bottom: 1rem;
@@ -64,6 +65,7 @@
       object-fit: contain;
     }
 
+    /* Floating QR Button */
     .footer-qr {
       position: fixed;
       bottom: 20px;
@@ -88,6 +90,7 @@
       box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
     }
 
+    /* Responsive spacing */
     @media (max-width: 768px) {
       .d-flex.gap-3>div {
         flex: 1;
@@ -126,6 +129,7 @@
 
     <div class="d-flex justify-content-between pagetitle align-items-center">
       <h1 class="text-start fs-4">
+        <!-- <i class="bi bi-file-earmark-text-fill text-secondary"></i> -->
         OMR Sheet Processor
       </h1>
 
@@ -144,27 +148,33 @@
         <!-- Heading -->
         <h6 class="text-dark card-title mb-2 fs-6">Upload Key Sheet</h6>
 
-        <!-- Dashed Upload Box (click opens options modal) -->
+        <!-- Dashed Upload Box (click opens camera or fallback) -->
         <div id="uploadBox"
           class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
           style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6"
-          onclick="showUploadOptions()">
+          onclick="openCameraOrFallback()">
           <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
-          <p class="text-muted mb-0 permission-hint" style="font-size: 13px;">Click to upload image or capture using camera</p>
+          <p class="text-muted mb-0 permission-hint" style="font-size: 13px;">Click to capture image (or fallback to file picker)</p>
         </div>
 
-        <div>
-          <button class="btn btn-outline-primary btn-sm mt-3 w-100" type="submit">
+        <div class="d-grid gap-2 mt-3">
+          <!-- "Upload" button opens file chooser -->
+          <button id="openFileBtn" type="button" class="btn btn-outline-primary btn-sm w-100">
             Upload
           </button>
+
+          <!-- "Process" button sends the selected file to API (keeps old behavior) -->
+          <button id="processBtn" type="button" class="btn btn-primary btn-sm w-100">
+            Process
+          </button>
         </div>
-        <!-- Hidden File Input -->
+
+        <!-- Hidden File Input: used both for manual picker and for captured image -->
         <input type="file" id="fileInput" accept="image/*,application/pdf" required hidden>
 
       </form>
 
-      <!-- helpful small note -->
-      <div class="mt-2 small-muted">Tip: Use camera to capture OMR sheet. If camera permission is denied, use upload.</div>
+      <div class="mt-2 small-muted">Tip: Click the dashed box to use camera. If camera blocked, you'll get the file picker. Use the Upload button to pick files manually.</div>
 
     </div>
 
@@ -180,13 +190,13 @@
 
   </div>
 
-  <!-- Camera Modal (Bootstrap) -->
+  <!-- Camera Modal -->
   <div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content p-3">
         <div class="modal-header">
           <h6 class="modal-title">Capture Image</h6>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="cameraModalClose"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" id="cameraModalClose"></button>
         </div>
         <div class="modal-body text-center">
           <div id="cameraError" class="alert alert-warning" style="display:none;"></div>
@@ -209,28 +219,17 @@
     </div>
   </div>
 
-  <!-- Simple choice modal for Capture / Upload -->
-  <div class="modal fade" id="choiceModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-      <div class="modal-content p-3">
-        <div class="modal-body text-center">
-          <h6 class="mb-3">Choose</h6>
-          <div class="d-grid gap-2">
-            <button id="choiceCapture" class="btn btn-primary btn-sm">📷 Capture Photo</button>
-            <button id="choiceUpload" class="btn btn-outline-secondary btn-sm">📁 Upload File</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <script>
     // Elements
-    const uploadForm = document.getElementById("uploadForm");
     const fileInput = document.getElementById("fileInput");
     const previewImg = document.getElementById("preview");
     const previewPdf = document.getElementById("previewPdf");
 
+    const uploadBox = document.getElementById("uploadBox");
+    const openFileBtn = document.getElementById("openFileBtn");
+    const processBtn = document.getElementById("processBtn");
+
+    // Camera modal elements
     const cameraModalEl = document.getElementById('cameraModal');
     const cameraModal = new bootstrap.Modal(cameraModalEl);
     const cameraStream = document.getElementById("cameraStream");
@@ -239,77 +238,43 @@
     const cameraError = document.getElementById("cameraError");
     const cameraPermissionInfo = document.getElementById("cameraPermissionInfo");
     const openSettingsBtn = document.getElementById("openSettingsBtn");
-
-    const choiceModal = new bootstrap.Modal(document.getElementById('choiceModal'));
-    const choiceCapture = document.getElementById("choiceCapture");
-    const choiceUpload = document.getElementById("choiceUpload");
+    const cameraModalClose = document.getElementById("cameraModalClose");
 
     let stream = null;
     let cameraActive = false;
 
-    // Show the small choice modal instead of confirm()
-    function showUploadOptions() {
-      choiceModal.show();
-    }
+    // localStorage values
+    let sucCode = localStorage.getItem("sucCode") || "";
+    let examID = localStorage.getItem("examId") || "";
 
-    // Hook up choice modal buttons
-    choiceCapture.addEventListener('click', async () => {
-      choiceModal.hide();
-      // Check permission status first (if Permissions API available)
-      try {
-        if (navigator.permissions && navigator.permissions.query) {
-          // query the camera permission (label differs across browsers; 'camera' may be 'camera' or 'microphone' combos)
-          const perm = await navigator.permissions.query({ name: 'camera' }).catch(() => null);
-          if (perm) {
-            if (perm.state === 'denied') {
-              // show friendly instructions
-              cameraPermissionInfo.style.display = 'block';
-              openSettingsBtn.style.display = 'inline-block';
-              cameraError.style.display = 'block';
-              cameraError.innerText = 'Camera permission is denied for this site. Please allow it in site settings.';
-              choiceModal.hide();
-              return cameraModal.show();
-            }
-            // if granted or prompt - attempt to start camera
-          }
-        }
-      } catch (err) {
-        // ignore permission API errors, proceed to request camera
-      }
-      startCamera();
-    });
-
-    choiceUpload.addEventListener('click', () => {
-      choiceModal.hide();
-      fileInput.click();
-    });
-
-    // Start camera: requests permission if necessary
-    async function startCamera() {
+    // -------------- Behavior: click dashed box -> camera (fallback to file) ----------------
+    async function openCameraOrFallback() {
       cameraError.style.display = 'none';
       cameraPermissionInfo.style.display = 'none';
       openSettingsBtn.style.display = 'none';
 
       try {
-        // Important: getUserMedia will prompt the user if permission not yet granted
+        // Try to start camera (will prompt if needed)
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         cameraStream.srcObject = stream;
         cameraActive = true;
         cameraModal.show();
       } catch (err) {
-        // Display user-friendly message
-        cameraPermissionInfo.style.display = 'block';
-        cameraError.style.display = 'block';
-        cameraError.innerText = formatGetUserMediaError(err);
-        openSettingsBtn.style.display = 'inline-block';
-        cameraModal.show();
-        console.error('getUserMedia error:', err);
+        // Fallback: open file picker if no camera or permission denied
+        console.warn("Camera start error, falling back to file picker:", err);
+        // Show a small friendly message in the modal if we want, but user asked fallback automatically
+        fileInput.click();
       }
     }
 
-    // Capture button
+    // -------------- Open File chooser when Upload button clicked ----------------
+    openFileBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    // -------------- Capture button in camera modal ----------------
     captureBtn.addEventListener('click', () => {
-      if (!cameraActive || !stream) {
+      if (!stream) {
         cameraError.style.display = 'block';
         cameraError.innerText = 'Camera not active.';
         return;
@@ -326,12 +291,11 @@
           return;
         }
         const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
-        // set file input so the rest of your flow works unchanged
         const dt = new DataTransfer();
         dt.items.add(file);
         fileInput.files = dt.files;
 
-        // preview
+        // Update preview
         previewImg.src = URL.createObjectURL(file);
         previewImg.style.display = 'block';
         previewPdf.style.display = 'none';
@@ -341,7 +305,7 @@
       cameraModal.hide();
     });
 
-    // Stop camera
+    // -------------- Stop camera safely ----------------
     function stopCamera() {
       if (stream) {
         stream.getTracks().forEach(t => t.stop());
@@ -350,61 +314,36 @@
       cameraActive = false;
     }
 
-    // Helpful button: open instructions (can't open browser settings programmatically)
-    openSettingsBtn.addEventListener('click', () => {
-      // Provide OS/browser-specific short instructions (user still must change settings)
-      alert('To allow camera: Click the lock icon near the address bar → Site settings → Allow camera → Reload the page. Or use browser settings → Privacy & security → Site settings.');
+    // Stop camera when modal closed (via close button or backdrop)
+    cameraModalEl.addEventListener('hidden.bs.modal', () => {
+      stopCamera();
     });
+    cameraModalClose.addEventListener('click', () => stopCamera());
 
-    // Format errors to show user-friendly messages
-    function formatGetUserMediaError(err) {
-      if (!err) return 'Unknown error accessing camera.';
-      const name = err.name || '';
-      switch (name) {
-        case 'NotAllowedError':
-        case 'PermissionDeniedError':
-          return 'Permission denied. Please allow camera access in your browser.';
-        case 'NotFoundError':
-        case 'DevicesNotFoundError':
-          return 'No camera found. Please connect a camera.';
-        case 'NotReadableError':
-          return 'Camera is already in use by another app.';
-        case 'OverconstrainedError':
-          return 'No camera matches the constraints.';
-        default:
-          return err.message || String(err);
-      }
-    }
-
-    // File input preview logic (images & PDF)
+    // -------------- File input change: show preview (image or PDF) ----------------
     fileInput.addEventListener('change', () => {
       const file = fileInput.files[0];
       if (!file) return;
 
-      // hide pdf canvas by default
       previewPdf.style.display = 'none';
+      previewImg.style.display = 'none';
 
       if (file.type === 'application/pdf') {
         // render first page using pdf.js
         const reader = new FileReader();
         reader.onload = function () {
           const typedarray = new Uint8Array(this.result);
-          pdfjsLib.getDocument(typedarray).promise.then(pdf => {
-            pdf.getPage(1).then(page => {
+          pdfjsLib.getDocument(typedarray).promise
+            .then(pdf => pdf.getPage(1))
+            .then(page => {
               const viewport = page.getViewport({ scale: 1.5 });
               const canvas = previewPdf;
               const context = canvas.getContext("2d");
               canvas.width = viewport.width;
               canvas.height = viewport.height;
               canvas.style.display = 'block';
-              previewImg.style.display = 'none';
               page.render({ canvasContext: context, viewport: viewport });
-            }).catch(err => {
-              console.error('PDF page render error:', err);
-            });
-          }).catch(err => {
-            console.error('PDF getDocument error:', err);
-          });
+            }).catch(err => console.error('PDF render error:', err));
         };
         reader.readAsArrayBuffer(file);
       } else if (file.type.startsWith('image/')) {
@@ -416,27 +355,24 @@
       }
     });
 
-    // Upload form submit (keeps your original behavior)
-    uploadForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    // -------------- Process button: submit to your API (keeps original logic) ----------------
+    processBtn.addEventListener('click', async () => {
       const file = fileInput.files[0];
-      if (!file) return alert("Please upload an image or capture a photo first!");
+      if (!file) return alert("Please upload or capture an image/PDF first!");
 
       const apiBase = "https://w.aditya.ac.in/omrapi";
-      const sucCode = localStorage.getItem("sucCode") || "12346";
-      const examID = localStorage.getItem("examId") || "ew123";
-
       const formData = new FormData();
       formData.append("file", file);
 
       try {
-        const res = await fetch(`${apiBase}/process/${sucCode}/${examID}`, {
+        const res = await fetch(`${apiBase}/process/${sucCode || "12346"}/${examID || "ew123"}`, {
           method: "POST",
           body: formData
         });
         if (!res.ok) throw new Error("Processing failed!");
         const data = await res.json();
 
+        // Store response and redirect (same as before)
         localStorage.setItem("omrResultData", JSON.stringify(data));
         localStorage.setItem("sucCode", data.suc);
         localStorage.setItem("examId", data.examID);
@@ -448,31 +384,21 @@
       }
     });
 
-    // Close camera modal -> stop camera to free device
-    document.getElementById('cameraModalClose').addEventListener('click', () => {
-      stopCamera();
-    });
-
-    // If user closes modal by backdrop click or ESC, stop camera
-    cameraModalEl.addEventListener('hidden.bs.modal', () => {
-      stopCamera();
-    });
-
-    // Optional: proactively check permission state at page load and show hint
+    // -------------- Optional: small permission check on load to hint user ----------------
     (async function checkPermissionOnLoad() {
       try {
         if (navigator.permissions && navigator.permissions.query) {
           const perm = await navigator.permissions.query({ name: 'camera' }).catch(() => null);
           if (perm && perm.state === 'denied') {
-            // small subtle hint to user
-            const uploadBox = document.getElementById('uploadBox');
             const hint = document.createElement('div');
             hint.className = 'small-muted mt-2';
-            hint.innerText = 'Camera access is blocked for this site. Use "Upload File" or allow camera in site settings.';
+            hint.innerText = 'Camera access is currently blocked for this site. Use "Upload" to pick files or allow camera in site settings.';
             uploadBox.appendChild(hint);
           }
         }
-      } catch (err) { /* ignore */ }
+      } catch (err) {
+        // ignore
+      }
     })();
   </script>
 
