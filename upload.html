@@ -57,10 +57,12 @@
       </div>
     </div>
 
+    <!-- Upload / Camera Section -->
     <div class="card card-body mb-4">
       <form id="uploadForm" class="p-1">
-        <h6 class="text-dark card-title mb-2 fs-6">Upload Key Sheets</h6>
+        <h6 class="text-dark card-title mb-2 fs-6">Upload Key Sheet</h6>
 
+        <!-- Upload Box -->
         <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
           style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6" onclick="openUploadOptions()">
           <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
@@ -75,10 +77,12 @@
           </button>
         </div>
 
+
         <input type="file" id="fileInput" accept="image/*" hidden>
       </form>
     </div>
 
+    <!-- Preview Panel -->
     <div class="row g-3">
       <div class="col-md-6 panel">
         <div class="card card-custom p-3 text-center">
@@ -89,6 +93,7 @@
     </div>
   </div>
 
+  <!-- Camera Modal -->
   <div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content p-3">
@@ -121,6 +126,7 @@
     let cameraActive = false;
     let stream = null;
 
+    // Open upload or camera options
     function openUploadOptions() {
       const choice = confirm("Click 'OK' to capture using camera, or 'Cancel' to upload an image.");
       if (choice) {
@@ -130,6 +136,7 @@
       }
     }
 
+    // Start Camera
     async function startCamera() {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -142,42 +149,21 @@
       }
     }
 
-    // Auto-crop central region (trim edges)
-    function autoCrop(imageBitmap) {
-      const offCanvas = document.createElement("canvas");
-      const offCtx = offCanvas.getContext("2d");
-
-      const cropRatio = 0.85; // crop to 85% of the frame (centered)
-      const cropWidth = imageBitmap.width * cropRatio;
-      const cropHeight = imageBitmap.height * cropRatio;
-      const x = (imageBitmap.width - cropWidth) / 2;
-      const y = (imageBitmap.height - cropHeight) / 2;
-
-      offCanvas.width = cropWidth;
-      offCanvas.height = cropHeight;
-      offCtx.drawImage(imageBitmap, x, y, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-      return offCanvas;
-    }
-
-    captureBtn.addEventListener("click", async () => {
+    // Capture photo
+    captureBtn.addEventListener("click", () => {
       if (!cameraActive) return;
 
-      const track = stream.getVideoTracks()[0];
-      const imageCapture = new ImageCapture(track);
-      try {
-        const bitmap = await imageCapture.grabFrame();
-        const croppedCanvas = autoCrop(bitmap);
+      const ctx = cameraCanvas.getContext("2d");
+      cameraCanvas.width = cameraStream.videoWidth;
+      cameraCanvas.height = cameraStream.videoHeight;
+      ctx.drawImage(cameraStream, 0, 0, cameraCanvas.width, cameraCanvas.height);
 
-        croppedCanvas.toBlob((blob) => {
-          const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-          fileInput.files = createFileList(file);
-          previewImg.src = URL.createObjectURL(file);
-          previewImg.style.display = "block";
-        }, "image/jpeg");
-
-      } catch (err) {
-        console.error("Capture failed:", err);
-      }
+      cameraCanvas.toBlob((blob) => {
+        const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+        fileInput.files = createFileList(file);
+        previewImg.src = URL.createObjectURL(file);
+        previewImg.style.display = "block";
+      });
 
       stopCamera();
       cameraModal.hide();
@@ -196,13 +182,45 @@
       return dataTransfer.files;
     }
 
+    // Image preview logic
     fileInput.addEventListener("change", () => {
       const file = fileInput.files[0];
       if (!file) return;
-      previewImg.src = URL.createObjectURL(file);
-      previewImg.style.display = "block";
+
+      previewImg.style.display = "none";
+      if (previewPdf) previewPdf.style.display = "none";
+
+      if (file.type === "application/pdf") {
+        if (!previewPdf) return;
+        previewPdf.style.display = "block";
+
+        const reader = new FileReader();
+        reader.onload = function () {
+          const typedarray = new Uint8Array(this.result);
+          pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+            pdf.getPage(1).then(page => {
+              const viewport = page.getViewport({ scale: 1.5 });
+              const canvas = previewPdf;
+              const context = canvas.getContext("2d");
+              canvas.width = viewport.width;
+              canvas.height = viewport.height;
+              page.render({ canvasContext: context, viewport: viewport });
+            });
+          });
+        };
+        reader.readAsArrayBuffer(file);
+
+      } else if (file.type.startsWith("image/")) {
+        previewImg.style.display = "block";
+        previewImg.src = URL.createObjectURL(file);
+      } else {
+        alert("Please upload an image or PDF only.");
+        fileInput.value = "";
+      }
     });
 
+
+    // Upload handler
     uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const file = fileInput.files[0];
@@ -235,9 +253,17 @@
       }
     });
   </script>
-
+  <script src="assets/vendor/apexcharts/apexcharts.min.js"></script>
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/chart.js/chart.umd.js"></script>
+  <script src="assets/vendor/echarts/echarts.min.js"></script>
+  <script src="assets/vendor/quill/quill.js"></script>
+  <script src="assets/vendor/simple-datatables/simple-datatables.js"></script>
+  <script src="assets/vendor/tinymce/tinymce.min.js"></script>
+  <script src="assets/vendor/php-email-form/validate.js"></script>
+  <!-- Template Main JS File -->
+  <script src="assets/js/main.js"></script>
   <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
-
