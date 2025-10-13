@@ -133,11 +133,12 @@
     </div>
   </div>
 
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
   <script>
     const uploadForm = document.getElementById("uploadForm");
     const fileInput = document.getElementById("fileInput");
     const previewImg = document.getElementById("preview");
-
     let cameraStreamObj = null;
 
     function openCameraModal() {
@@ -156,7 +157,6 @@
       }
     }
 
-    // Auto center-crop square
     function autoCropSquare(sourceCanvas) {
       const size = Math.min(sourceCanvas.width, sourceCanvas.height);
       const startX = (sourceCanvas.width - size) / 2;
@@ -169,7 +169,6 @@
       return cropped;
     }
 
-    // Capture photo button
     document.getElementById("captureBtn").addEventListener("click", () => {
       const video = document.getElementById("cameraStream");
       const canvas = document.getElementById("cameraCanvas");
@@ -188,12 +187,10 @@
         previewImg.style.display = "block";
       });
 
-      // Stop camera
       cameraStreamObj.getTracks().forEach(track => track.stop());
       bootstrap.Modal.getInstance(document.getElementById('cameraModal')).hide();
     });
 
-    // File input preview
     fileInput.addEventListener("change", () => {
       const file = fileInput.files[0];
       if (!file) return;
@@ -201,7 +198,6 @@
       previewImg.src = URL.createObjectURL(file);
     });
 
-    // Form submit
     uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const file = fileInput.files[0];
@@ -233,7 +229,5 @@
       }
     });
   </script>
-
-  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
