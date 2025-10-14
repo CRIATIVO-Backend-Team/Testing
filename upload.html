@@ -233,7 +233,7 @@
 
     function processWithScanner(imgElement) {
       if (!scanner) return imgElement;
-      const resultCanvas = scanner.extractPaper(imgElement, 500, 1000);
+      const resultCanvas = scanner.extractPaper(imgElement, imgElement.width, imgElement.height);
       return resultCanvas;
     }
 
@@ -312,6 +312,7 @@
 </body>
 
 </html>
+
 
 
 
