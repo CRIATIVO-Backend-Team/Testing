@@ -166,7 +166,7 @@
       document.getElementById("examID").innerText = examID;
 
       // Set processed image
-      const imgUrl = data.image_url.startsWith("http") ? data.image_url : "https://w.aditya.ac.in/omrapi" + data.image_url;
+      const imgUrl = data.image_url.startsWith("http") ? data.image_url : "https://dsb744jt-8000.inc1.devtunnels.ms" + data.image_url;
       document.getElementById("resultImg").src = imgUrl + "?t=" + new Date().getTime();
 
       // Save to currentData
