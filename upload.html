@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>OMR Sheet Processor-1</title>
+  <title>OMR Sheet Processor</title>
 
   <!-- Bootstrap CSS -->
   <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
@@ -17,17 +17,15 @@
 
   <!-- Google Fonts -->
   <link href="https://fonts.gstatic.com" rel="preconnect">
-  <link
-    href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Nunito:400,600,700|Poppins:400,600,700" rel="stylesheet">
 
   <!-- AngularJS + PDF.js + QR -->
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
-  <!-- OpenCV (optional for enhancements) -->
-  <script src="https://docs.opencv.org/4.7.0/opencv.js" async></script>
+  <!-- ✅ PhotoScan.js -->
+  <script src="https://cdn.jsdelivr.net/gh/ailon/photoscan.js/dist/photoscan.min.js"></script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -83,6 +81,7 @@
     <div class="card card-body mb-4">
       <form id="uploadForm" class="p-1">
         <h6 class="text-dark card-title mb-3 mt-3">Upload Key Sheet</h6>
+
         <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
           style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6"
           onclick="document.getElementById('fileInput').click();">
@@ -134,39 +133,23 @@
 
   <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-  <!-- ✅ Replace jscanify with MediaPipe Document Scanner -->
-  <script type="module">
-    import { FilesetResolver, DocumentScanner } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
-
+  <script>
     const uploadForm = document.getElementById("uploadForm");
     const fileInput = document.getElementById("fileInput");
     const previewImg = document.getElementById("preview");
     const captureBtn = document.getElementById("captureBtn");
-
     let cameraStreamObj = null;
-    let scanner = null;
 
-    // Initialize MediaPipe DocumentScanner
-    async function initScanner() {
-      const vision = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
-      );
-      scanner = await DocumentScanner.createFromOptions(vision, {
-        baseOptions: { modelAssetPath: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/document_scanner.task" },
+    // Initialize PhotoScan
+    function processWithPhotoScan(imageEl, callback) {
+      const scanner = new PhotoScan({
+        onComplete: result => {
+          const croppedCanvas = result.image;
+          callback(croppedCanvas);
+        },
+        onError: () => callback(imageEl)
       });
-    }
-    initScanner();
-
-    async function processWithScanner(imageEl) {
-      if (!scanner) return imageEl;
-      try {
-        const result = await scanner.detect(imageEl);
-        if (result && result.croppedImage) return result.croppedImage;
-        return imageEl;
-      } catch (err) {
-        console.error("DocumentScanner failed:", err);
-        return imageEl;
-      }
+      scanner.process(imageEl);
     }
 
     function openCameraModal() {
@@ -176,12 +159,15 @@
     }
 
     async function startCamera() {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      document.getElementById("cameraStream").srcObject = stream;
-      cameraStreamObj = stream;
+      try {
+        cameraStreamObj = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        document.getElementById("cameraStream").srcObject = cameraStreamObj;
+      } catch (err) {
+        alert("Camera access denied or not available!");
+      }
     }
 
-    async function captureImage() {
+    captureBtn.addEventListener("click", () => {
       const video = document.getElementById("cameraStream");
       const canvas = document.getElementById("cameraCanvas");
       canvas.width = video.videoWidth;
@@ -189,48 +175,46 @@
       const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const processed = await processWithScanner(canvas);
-      const finalCanvas = processed instanceof HTMLCanvasElement ? processed : canvas;
-
-      const blob = await new Promise(res => finalCanvas.toBlob(res, "image/jpeg", 0.95));
-      const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      fileInput.files = dt.files;
-
-      previewImg.src = URL.createObjectURL(file);
+      processWithPhotoScan(canvas, resultCanvas => {
+        resultCanvas.toBlob(blob => {
+          const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          fileInput.files = dt.files;
+          previewImg.src = URL.createObjectURL(file);
+        }, "image/jpeg", 0.95);
+      });
 
       stopCameraTracks();
-      bootstrap.Modal.getInstance(document.getElementById("cameraModal")).hide();
-    }
-
-    captureBtn.addEventListener("click", captureImage);
+      bootstrap.Modal.getInstance(document.getElementById('cameraModal')).hide();
+    });
 
     function stopCameraTracks() {
       if (cameraStreamObj) {
-        cameraStreamObj.getTracks().forEach(t => t.stop());
+        cameraStreamObj.getTracks().forEach(track => track.stop());
         cameraStreamObj = null;
       }
     }
 
-    fileInput.addEventListener("change", async () => {
+    fileInput.addEventListener("change", () => {
       const file = fileInput.files[0];
       if (!file) return;
       const img = new Image();
-      img.onload = async () => {
-        const resultCanvas = await processWithScanner(img);
-        const blob = await new Promise(res => resultCanvas.toBlob(res, 'image/jpeg', 0.95));
-        const finalFile = new File([blob], "upload.jpg", { type: "image/jpeg" });
-        const dt = new DataTransfer();
-        dt.items.add(finalFile);
-        fileInput.files = dt.files;
-        previewImg.src = URL.createObjectURL(finalFile);
+      img.onload = function () {
+        processWithPhotoScan(img, resultCanvas => {
+          resultCanvas.toBlob(blob => {
+            const file = new File([blob], "upload.jpg", { type: "image/jpeg" });
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+            previewImg.src = URL.createObjectURL(file);
+          }, "image/jpeg", 0.95);
+        });
       };
       img.src = URL.createObjectURL(file);
     });
 
-    uploadForm.addEventListener("submit", async (e) => {
+    uploadForm.addEventListener("submit", async e => {
       e.preventDefault();
       const file = fileInput.files[0];
       if (!file) return alert("Please upload or capture an image first!");
@@ -254,7 +238,6 @@
         window.location.href = "result.html";
       } catch (err) {
         alert("Error: " + err.message);
-        console.error(err);
       }
     });
   </script>
