@@ -214,13 +214,20 @@
 
       async function startCamera() {
         try {
-          cameraStreamObj = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          cameraStreamObj = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: "environment",
+              width: { ideal: 1920 },   // request 1080p or higher
+              height: { ideal: 1080 }
+            }
+          });
           document.getElementById("cameraStream").srcObject = cameraStreamObj;
         } catch (err) {
           alert("Camera access denied or not available!");
           console.error(err);
         }
       }
+
 
       // Document scanning using OpenCV.js
       function scanDocument(imgElement) {
@@ -291,6 +298,7 @@
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
 
         const resultMat = scanDocument(canvas);
         cv.imshow(canvas, resultMat);
