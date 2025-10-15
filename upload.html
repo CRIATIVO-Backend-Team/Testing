@@ -291,7 +291,6 @@
         return dst;
       }
 
-      // Enhance image (sharpen)
       function enhanceImage(mat) {
         let dst = new cv.Mat();
         let kernel = cv.matFromArray(3, 3, cv.CV_32F, [
