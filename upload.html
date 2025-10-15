@@ -115,8 +115,7 @@
     /* Mobile Camera Fullscreen */
     @media (max-width: 576px) {
       #cameraStream {
-        width: 80vw !important;
-        height: 90vh !important;
+        max-height: 50vh;
       }
     }
   </style>
@@ -169,24 +168,26 @@
     </div>
 
     <!-- Camera Modal -->
-    <div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" style="max-width: 80vw; max-height: 80vh">
-        <div class="modal-content p-3">
-          <div class="modal-header">
-            <h6 class="modal-title">Capture Image</h6>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body text-center">
-            <video id="cameraStream" autoplay playsinline style="width:100%; border-radius:10px;"></video>
-            <canvas id="cameraCanvas" class="d-none"></canvas>
-          </div>
-          <div class="modal-footer d-flex justify-content-between">
-            <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-            <button id="captureBtn" class="btn btn-primary btn-sm">Capture</button>
-          </div>
-        </div>
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 500px; width: 90%;">
+    <div class="modal-content p-3">
+      <div class="modal-header">
+        <h6 class="modal-title">Capture Image</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center">
+        <video id="cameraStream" autoplay playsinline
+          style="width:100%; max-height: 60vh; border-radius:10px;"></video>
+        <canvas id="cameraCanvas" class="d-none"></canvas>
+      </div>
+      <div class="modal-footer d-flex justify-content-between">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button id="captureBtn" class="btn btn-primary btn-sm">Capture</button>
       </div>
     </div>
+  </div>
+</div>
+
 
     <!-- Scripts -->
     <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -392,6 +393,7 @@
     </script>
 </body>
 </html>
+
 
 
 
