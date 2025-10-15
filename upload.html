@@ -198,6 +198,8 @@
     <!-- Remove jscanify, keep only OpenCV.js -->
     <script src="https://docs.opencv.org/4.7.0/opencv.js" async></script>
 
+    <!-- Replace jscanify with OpenCV.js -->
+
     <script>
       const uploadForm = document.getElementById("uploadForm");
       const fileInput = document.getElementById("fileInput");
@@ -220,101 +222,77 @@
         }
       }
 
-      // Document detection and perspective correction using OpenCV.js
-      function processWithOpenCV(imgElement) {
-        if (typeof cv === "undefined") {
-          alert("OpenCV not loaded yet!");
-          return imgElement;
-        }
+      // Document scanning using OpenCV.js
+      function scanDocument(imgElement) {
+        const src = cv.imread(imgElement);
+        const dst = new cv.Mat();
+        const gray = new cv.Mat();
+        const blurred = new cv.Mat();
+        const edges = new cv.Mat();
+        const contours = new cv.MatVector();
+        const hierarchy = new cv.Mat();
 
-        // Create canvas for output
-        const canvas = document.createElement("canvas");
-        canvas.width = imgElement.width;
-        canvas.height = imgElement.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-
-        let src = cv.imread(canvas);
-        let dst = new cv.Mat();
-        let gray = new cv.Mat();
-        let blur = new cv.Mat();
-        let edges = new cv.Mat();
-
+        // Convert to grayscale
         cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
-        cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
-        cv.Canny(blur, edges, 75, 200);
+
+        // Blur to reduce noise
+        cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
+
+        // Canny edge detection
+        cv.Canny(blurred, edges, 75, 200);
 
         // Find contours
-        let contours = new cv.MatVector();
-        let hierarchy = new cv.Mat();
         cv.findContours(edges, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
 
         let maxArea = 0;
-        let docCnt = null;
+        let approx = new cv.Mat();
+        let docContour = null;
 
-        for (let i = 0; i < contours.size(); ++i) {
-          let cnt = contours.get(i);
-          let area = cv.contourArea(cnt);
-          if (area > maxArea) {
-            let peri = cv.arcLength(cnt, true);
-            let approx = new cv.Mat();
-            cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
-            if (approx.rows === 4) {
-              docCnt = approx;
+        for (let i = 0; i < contours.size(); i++) {
+          const cnt = contours.get(i);
+          const peri = cv.arcLength(cnt, true);
+          cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
+          if (approx.rows === 4) {
+            const area = cv.contourArea(approx);
+            if (area > maxArea) {
               maxArea = area;
-            } else approx.delete();
+              docContour = approx.clone();
+            }
           }
           cnt.delete();
         }
 
-        if (docCnt) {
+        if (docContour) {
+          // Sort points clockwise
           let pts = [];
           for (let i = 0; i < 4; i++) {
-            pts.push({ x: docCnt.intAt(i, 0), y: docCnt.intAt(i, 1) });
+            pts.push({ x: docContour.intPtr(i, 0)[0], y: docContour.intPtr(i, 0)[1] });
           }
+          pts.sort((a, b) => a.x + a.y - (b.x + b.y));
+          const tl = pts[0], tr = pts[1], br = pts[2], bl = pts[3];
 
-          // Order points (top-left, top-right, bottom-right, bottom-left)
-          pts.sort((a, b) => a.y - b.y);
-          let top = pts.slice(0, 2).sort((a, b) => a.x - b.x);
-          let bottom = pts.slice(2, 4).sort((a, b) => a.x - b.x);
-          let ordered = [top[0], top[1], bottom[1], bottom[0]];
+          const widthA = Math.hypot(br.x - bl.x, br.y - bl.y);
+          const widthB = Math.hypot(tr.x - tl.x, tr.y - tl.y);
+          const maxWidth = Math.max(widthA, widthB);
 
-          let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-            ordered[0].x, ordered[0].y,
-            ordered[1].x, ordered[1].y,
-            ordered[2].x, ordered[2].y,
-            ordered[3].x, ordered[3].y
-          ]);
+          const heightA = Math.hypot(tr.x - br.x, tr.y - br.y);
+          const heightB = Math.hypot(tl.x - bl.x, tl.y - bl.y);
+          const maxHeight = Math.max(heightA, heightB);
 
-          let widthA = Math.hypot(ordered[2].x - ordered[3].x, ordered[2].y - ordered[3].y);
-          let widthB = Math.hypot(ordered[1].x - ordered[0].x, ordered[1].y - ordered[0].y);
-          let maxWidth = Math.max(widthA, widthB);
+          const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [tl.x, tl.y, tr.x, tr.y, br.x, br.y, bl.x, bl.y]);
+          const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, maxWidth - 1, 0, maxWidth - 1, maxHeight - 1, 0, maxHeight - 1]);
 
-          let heightA = Math.hypot(ordered[1].x - ordered[2].x, ordered[1].y - ordered[2].y);
-          let heightB = Math.hypot(ordered[0].x - ordered[3].x, ordered[0].y - ordered[3].y);
-          let maxHeight = Math.max(heightA, heightB);
-
-          let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-            0, 0,
-            maxWidth - 1, 0,
-            maxWidth - 1, maxHeight - 1,
-            0, maxHeight - 1
-          ]);
-
-          let M = cv.getPerspectiveTransform(srcTri, dstTri);
+          const M = cv.getPerspectiveTransform(srcTri, dstTri);
           cv.warpPerspective(src, dst, M, new cv.Size(maxWidth, maxHeight));
 
-          cv.imshow(canvas, dst);
+          src.delete(); gray.delete(); blurred.delete(); edges.delete(); contours.delete(); hierarchy.delete(); approx.delete(); docContour.delete(); srcTri.delete(); dstTri.delete(); M.delete();
 
-          // Clean up
-          src.delete(); dst.delete(); gray.delete(); blur.delete(); edges.delete(); contours.delete(); hierarchy.delete(); docCnt.delete(); M.delete(); srcTri.delete(); dstTri.delete();
-
-          return canvas;
+          return dst;
+        } else {
+          // If no document detected, return original
+          src.delete(); gray.delete(); blurred.delete(); edges.delete(); contours.delete(); hierarchy.delete(); approx.delete();
+          return cv.imread(imgElement);
         }
-
-        // If no document found, return original
-        src.delete(); dst.delete(); gray.delete(); blur.delete(); edges.delete(); contours.delete(); hierarchy.delete();
-        return imgElement;
       }
 
       // Capture photo
@@ -326,8 +304,10 @@
         const ctx = canvas.getContext("2d");
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const resultCanvas = processWithOpenCV(canvas);
-        resultCanvas.toBlob(blob => {
+        const resultMat = scanDocument(canvas);
+        cv.imshow(canvas, resultMat);
+
+        canvas.toBlob(blob => {
           const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
           const dt = new DataTransfer();
           dt.items.add(file);
@@ -335,6 +315,7 @@
           previewImg.src = URL.createObjectURL(file);
         });
 
+        resultMat.delete();
         cameraStreamObj.getTracks().forEach(track => track.stop());
         bootstrap.Modal.getInstance(document.getElementById('cameraModal')).hide();
       });
@@ -345,18 +326,59 @@
         if (!file) return;
         const img = new Image();
         img.onload = function () {
-          const resultCanvas = processWithOpenCV(img);
-          resultCanvas.toBlob(blob => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          const resultMat = scanDocument(canvas);
+          cv.imshow(canvas, resultMat);
+
+          canvas.toBlob(blob => {
             const file = new File([blob], "upload.jpg", { type: "image/jpeg" });
             const dt = new DataTransfer();
             dt.items.add(file);
             fileInput.files = dt.files;
             previewImg.src = URL.createObjectURL(file);
           });
+          resultMat.delete();
         };
         img.src = URL.createObjectURL(file);
       });
+
+      // Upload form remains unchanged
+      uploadForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const file = fileInput.files[0];
+        if (!file) return alert("Please upload or capture an image first!");
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const sucCode = localStorage.getItem("sucCode") || "12346";
+          const examID = localStorage.getItem("examId") || "ew123";
+
+          const res = await fetch(`https://dsb744jt-8000.inc1.devtunnels.ms/process/${sucCode}/${examID}`, {
+            method: "POST",
+            body: formData
+          });
+
+          if (!res.ok) throw new Error("Processing failed!");
+          const data = await res.json();
+
+          localStorage.setItem("omrResultData", JSON.stringify(data));
+          localStorage.setItem("sucCode", data.suc);
+          localStorage.setItem("examId", data.examID);
+
+          window.location.href = "result.html";
+        } catch (err) {
+          alert("Error: " + err.message);
+          console.error(err);
+        }
+      });
     </script>
+
 
 </body>
 
