@@ -125,30 +125,22 @@
 <body>
   <div class="container py-4">
     <div class="d-flex justify-content-between pagetitle align-items-center">
-      <h1 class="text-start fs-4">
-        OMR Sheet Processor
-      </h1>
-
+      <h1 class="text-start fs-4">OMR Sheet Processor</h1>
       <div class="text-end">
-        <button class="btn btn-primary btn-sm">
-          Next
-        </button>
+        <button id="nextBtn" class="btn btn-primary btn-sm">Next</button>
       </div>
     </div>
 
+    <!-- Upload Card -->
     <div class="card card-body mb-4" id="uploadCard">
       <form id="uploadForm" class="p-1">
         <h6 class="text-dark card-title mb-3 mt-3">Upload Key Sheet</h6>
-
-        <!-- Dashed Upload Box -->
         <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
           style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6"
           onclick="document.getElementById('fileInput').click();">
           <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
           <p class="text-muted mb-0" style="font-size: 13px;">Click to upload image</p>
         </div>
-
-        <!-- Upload & Camera Buttons -->
         <div class="d-flex gap-2 mt-3">
           <button class="btn btn-outline-primary btn-sm flex-grow-1" type="submit">Upload</button>
           <button type="button" class="btn btn-light text-primary btn-flex" style="flex:0 0 50px;"
@@ -156,12 +148,11 @@
             <i class="bi bi-camera fs-5"></i>
           </button>
         </div>
-
         <input type="file" id="fileInput" accept="image/*,application/pdf" hidden>
       </form>
     </div>
 
-    <!-- Preview -->
+    <!-- Preview + Loading -->
     <div class="row g-3" id="previewCard" style="display:none;">
       <div class="col-md-12 panel">
         <div class="card card-custom p-3 text-center mb-3">
@@ -175,9 +166,7 @@
         </div>
         <p>Processing...</p>
       </div>
-
     </div>
-
 
     <!-- Camera Modal -->
     <div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
@@ -210,6 +199,7 @@
       const uploadCard = document.getElementById("uploadCard");
       const previewCard = document.getElementById("previewCard");
       const loadingSpinner = document.getElementById("loadingSpinner");
+      const nextBtn = document.getElementById("nextBtn");
       let cameraStreamObj = null;
 
       function openCameraModal() {
@@ -221,11 +211,7 @@
       async function startCamera() {
         try {
           cameraStreamObj = await navigator.mediaDevices.getUserMedia({
-            video: {
-              facingMode: "environment",
-              width: { ideal: 1920 },
-              height: { ideal: 1080 }
-            }
+            video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }
           });
           document.getElementById("cameraStream").srcObject = cameraStreamObj;
         } catch (err) {
@@ -234,7 +220,7 @@
         }
       }
 
-      // Document scanning using OpenCV.js
+      // OpenCV document scan
       function scanDocument(imgElement) {
         const src = cv.imread(imgElement);
         const gray = new cv.Mat();
@@ -246,30 +232,22 @@
         cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
         cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
         cv.Canny(blurred, edges, 75, 200);
-
         cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-        let maxArea = 0;
-        let docContour = null;
-
+        let maxArea = 0, docContour = null;
         for (let i = 0; i < contours.size(); i++) {
           const cnt = contours.get(i);
           const peri = cv.arcLength(cnt, true);
           const approx = new cv.Mat();
           cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
-
           if (approx.rows >= 4) {
             const hull = new cv.Mat();
             cv.convexHull(approx, hull, false, true);
             const area = cv.contourArea(hull);
-            if (area > maxArea) {
-              maxArea = area;
-              docContour = hull.clone();
-            }
+            if (area > maxArea) { maxArea = area; docContour = hull.clone(); }
             hull.delete();
           }
-          approx.delete();
-          cnt.delete();
+          approx.delete(); cnt.delete();
         }
 
         let dst;
@@ -288,15 +266,10 @@
             rect.width - 1, rect.height - 1,
             0, rect.height - 1
           ]);
-
           const M = cv.getPerspectiveTransform(srcTri, dstTri);
           cv.warpPerspective(src, dst, M, new cv.Size(rect.width, rect.height));
-
-          srcTri.delete(); dstTri.delete(); M.delete();
-          docContour.delete();
-        } else {
-          dst = src.clone();
-        }
+          srcTri.delete(); dstTri.delete(); M.delete(); docContour.delete();
+        } else { dst = src.clone(); }
 
         src.delete(); gray.delete(); blurred.delete(); edges.delete(); contours.delete(); hierarchy.delete();
         return dst;
@@ -304,100 +277,20 @@
 
       function enhanceImage(mat) {
         let dst = new cv.Mat();
-        let kernel = cv.matFromArray(3, 3, cv.CV_32F, [
-          0, -1, 0,
-          -1, 5, -1,
-          0, -1, 0
-        ]);
+        let kernel = cv.matFromArray(3, 3, cv.CV_32F, [0, -1, 0, -1, 5, -1, 0, -1, 0]);
         cv.filter2D(mat, dst, cv.CV_8U, kernel);
-        kernel.delete();
-        return dst;
+        kernel.delete(); return dst;
       }
 
-      // Capture photo
-      document.getElementById("captureBtn").addEventListener("click", () => {
-        const video = document.getElementById("cameraStream");
-        const canvas = document.getElementById("cameraCanvas");
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        let resultMat = scanDocument(canvas);
-        let enhancedMat = enhanceImage(resultMat);
-        resultMat.delete();
-
-        cv.imshow(canvas, enhancedMat);
-
-        canvas.toBlob(blob => {
-          const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-          const dt = new DataTransfer();
-          dt.items.add(file);
-          fileInput.files = dt.files;
-
-          loadingSpinner.style.display = 'block';
-          uploadCard.style.display = 'none';
-          previewCard.style.display = 'block';
-
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            previewImg.src = e.target.result;
-            loadingSpinner.style.display = 'none';
-          }
-          reader.readAsDataURL(file);
-        });
-
-        enhancedMat.delete();
-        cameraStreamObj.getTracks().forEach(track => track.stop());
-        bootstrap.Modal.getInstance(document.getElementById('cameraModal')).hide();
-      });
-
-      // File input preview & auto crop
-      fileInput.addEventListener("change", () => {
-        const file = fileInput.files[0];
-        if (!file) return;
-        const img = new Image();
-        img.onload = function () {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0);
-
-          let resultMat = scanDocument(canvas);
-          let enhancedMat = enhanceImage(resultMat);
-          resultMat.delete();
-
-          cv.imshow(canvas, enhancedMat);
-
-          canvas.toBlob(blob => {
-            const file = new File([blob], "upload.jpg", { type: "image/jpeg" });
-            const dt = new DataTransfer();
-            dt.items.add(file);
-            fileInput.files = dt.files;
-
-            loadingSpinner.style.display = 'block';
-            uploadCard.style.display = 'none';
-            previewCard.style.display = 'block';
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-              previewImg.src = e.target.result;
-              loadingSpinner.style.display = 'none';
-            }
-            reader.readAsDataURL(file);
-          });
-
-          enhancedMat.delete();
-        };
-        img.src = URL.createObjectURL(file);
-      });
-
-      // Upload form
-      uploadForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
+      // Common function for processing & navigation
+      async function processImageAndGo() {
         const file = fileInput.files[0];
         if (!file) return alert("Please upload or capture an image first!");
+
+        // Show preview + loading
+        uploadCard.style.display = 'none';
+        previewCard.style.display = 'block';
+        loadingSpinner.style.display = 'block';
 
         const formData = new FormData();
         formData.append("file", file);
@@ -410,7 +303,6 @@
             method: "POST",
             body: formData
           });
-
           if (!res.ok) throw new Error("Processing failed!");
           const data = await res.json();
 
@@ -418,13 +310,85 @@
           localStorage.setItem("sucCode", data.suc);
           localStorage.setItem("examId", data.examID);
 
+          loadingSpinner.style.display = 'none';
           window.location.href = "result.html";
         } catch (err) {
+          loadingSpinner.style.display = 'none';
           alert("Error: " + err.message);
           console.error(err);
         }
+      }
+
+      // Event listeners
+      uploadForm.addEventListener("submit", (e) => { e.preventDefault(); processImageAndGo(); });
+      nextBtn.addEventListener("click", processImageAndGo);
+
+      // File input preview
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const img = new Image();
+        img.onload = function () {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          let resultMat = scanDocument(canvas);
+          let enhancedMat = enhanceImage(resultMat);
+          resultMat.delete();
+          cv.imshow(canvas, enhancedMat);
+          canvas.toBlob(blob => {
+            const file = new File([blob], "upload.jpg", { type: "image/jpeg" });
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+
+            uploadCard.style.display = 'none';
+            previewCard.style.display = 'block';
+            loadingSpinner.style.display = 'none';
+
+            const reader = new FileReader();
+            reader.onload = function (e) { previewImg.src = e.target.result; }
+            reader.readAsDataURL(file);
+          });
+          enhancedMat.delete();
+        };
+        img.src = URL.createObjectURL(file);
+      });
+
+      // Camera capture
+      document.getElementById("captureBtn").addEventListener("click", () => {
+        const video = document.getElementById("cameraStream");
+        const canvas = document.getElementById("cameraCanvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        let resultMat = scanDocument(canvas);
+        let enhancedMat = enhanceImage(resultMat);
+        resultMat.delete();
+        cv.imshow(canvas, enhancedMat);
+
+        canvas.toBlob(blob => {
+          const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          fileInput.files = dt.files;
+
+          uploadCard.style.display = 'none';
+          previewCard.style.display = 'block';
+          loadingSpinner.style.display = 'none';
+
+          const reader = new FileReader();
+          reader.onload = function (e) { previewImg.src = e.target.result; }
+          reader.readAsDataURL(file);
+        });
+
+        enhancedMat.delete();
+        cameraStreamObj.getTracks().forEach(track => track.stop());
+        bootstrap.Modal.getInstance(document.getElementById('cameraModal')).hide();
       });
     </script>
 </body>
-
 </html>
