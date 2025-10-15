@@ -136,7 +136,7 @@
       </div>
     </div>
 
-    <div class="card card-body mb-4">
+    <div class="card card-body mb-4" id="uploadCard">
       <form id="uploadForm" class="p-1">
         <h6 class="text-dark card-title mb-3 mt-3">Upload Key Sheet</h6>
 
@@ -162,14 +162,22 @@
     </div>
 
     <!-- Preview -->
-    <div class="row g-3">
+    <div class="row g-3" id="previewCard" style="display:none;">
       <div class="col-md-12 panel">
         <div class="card card-custom p-3 text-center mb-3">
           <h6 class="text-start mb-3 card-title mt-0 text-dark m-0 p-0 fs-6">Preview</h6>
           <img id="preview" class="preview-img imgHeight" src="assets/img/preview.png" alt="Preview">
         </div>
       </div>
+      <div id="loadingSpinner" style="display:none; text-align:center; margin-top:20px;">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p>Processing...</p>
+      </div>
+
     </div>
+
 
     <!-- Camera Modal -->
     <div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
@@ -199,6 +207,9 @@
       const uploadForm = document.getElementById("uploadForm");
       const fileInput = document.getElementById("fileInput");
       const previewImg = document.getElementById("preview");
+      const uploadCard = document.getElementById("uploadCard");
+      const previewCard = document.getElementById("previewCard");
+      const loadingSpinner = document.getElementById("loadingSpinner");
       let cameraStreamObj = null;
 
       function openCameraModal() {
@@ -323,7 +334,17 @@
           const dt = new DataTransfer();
           dt.items.add(file);
           fileInput.files = dt.files;
-          previewImg.src = URL.createObjectURL(file);
+
+          loadingSpinner.style.display = 'block';
+          uploadCard.style.display = 'none';
+          previewCard.style.display = 'block';
+
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            previewImg.src = e.target.result;
+            loadingSpinner.style.display = 'none';
+          }
+          reader.readAsDataURL(file);
         });
 
         enhancedMat.delete();
@@ -354,7 +375,17 @@
             const dt = new DataTransfer();
             dt.items.add(file);
             fileInput.files = dt.files;
-            previewImg.src = URL.createObjectURL(file);
+
+            loadingSpinner.style.display = 'block';
+            uploadCard.style.display = 'none';
+            previewCard.style.display = 'block';
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              previewImg.src = e.target.result;
+              loadingSpinner.style.display = 'none';
+            }
+            reader.readAsDataURL(file);
           });
 
           enhancedMat.delete();
