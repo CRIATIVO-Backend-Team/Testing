@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>OMR Sheet Processor</title>
+  <title>OMR Sheet Processor-1</title>
 
   <!-- Bootstrap CSS -->
   <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
@@ -26,9 +26,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
-  <!-- jscanify + OpenCV -->
+  <!-- OpenCV (optional for enhancements) -->
   <script src="https://docs.opencv.org/4.7.0/opencv.js" async></script>
-  <script src="https://cdn.jsdelivr.net/gh/ColonelParrot/jscanify@master/src/jscanify.min.js"></script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -69,83 +68,21 @@
       background: #fff;
       margin-bottom: 1rem;
     }
-
-    .btn-sm-custom {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.3rem;
-      font-weight: 600;
-      border-radius: 8px;
-      padding: 0.4rem 0.6rem;
-    }
-
-    /* Floating QR Button */
-    .footer-qr {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 60px;
-      height: 60px;
-      background: #f9fcff;
-      border: 1px solid #dee2e6;
-      border-radius: 50%;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      z-index: 1000;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .footer-qr:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
-    }
-
-    /* Responsive spacing */
-    @media (max-width: 768px) {
-      .d-flex.gap-3>div {
-        flex: 1;
-      }
-
-      .row.g-3>.col-md-6 {
-        flex: 1 1 100%;
-      }
-    }
-
-    /* Mobile Camera Fullscreen */
-    @media (max-width: 576px) {
-      #cameraStream {
-        width: 100vw !important;
-        height: auto !important;
-      }
-    }
   </style>
 </head>
 
 <body>
   <div class="container py-4">
     <div class="d-flex justify-content-between pagetitle align-items-center">
-      <h1 class="text-start fs-4">
-        <!-- <i class="bi bi-file-earmark-text-fill text-secondary"></i> -->
-        OMR Sheet Processor
-      </h1>
-
+      <h1 class="text-start fs-4">OMR Sheet Processor</h1>
       <div class="text-end">
-        <button class="btn btn-primary btn-sm">
-          Next
-        </button>
+        <button class="btn btn-primary btn-sm">Next</button>
       </div>
     </div>
 
     <div class="card card-body mb-4">
       <form id="uploadForm" class="p-1">
         <h6 class="text-dark card-title mb-3 mt-3">Upload Key Sheet</h6>
-
-        <!-- Dashed Upload Box -->
         <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
           style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6"
           onclick="document.getElementById('fileInput').click();">
@@ -153,7 +90,6 @@
           <p class="text-muted mb-0" style="font-size: 13px;">Click to upload image</p>
         </div>
 
-        <!-- Upload & Camera Buttons -->
         <div class="d-flex gap-2 mt-3">
           <button class="btn btn-outline-primary btn-sm flex-grow-1" type="submit">Upload</button>
           <button type="button" class="btn btn-light text-primary btn-flex" style="flex:0 0 50px;"
@@ -166,7 +102,6 @@
       </form>
     </div>
 
-    <!-- Preview -->
     <div class="row g-3">
       <div class="col-md-12 panel">
         <div class="card card-custom p-3 text-center mb-3">
@@ -175,338 +110,154 @@
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Camera Modal -->
-    <div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content p-3">
-          <div class="modal-header">
-            <h6 class="modal-title">Capture Image</h6>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body text-center">
-            <video id="cameraStream" autoplay playsinline style="width:100%; border-radius:10px;"></video>
-            <canvas id="cameraCanvas" class="d-none"></canvas>
-          </div>
-          <div class="modal-footer d-flex justify-content-between">
-            <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-            <button id="captureBtn" class="btn btn-primary btn-sm">Capture</button>
-          </div>
+  <!-- Camera Modal -->
+  <div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content p-3">
+        <div class="modal-header">
+          <h6 class="modal-title">Capture Image</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <video id="cameraStream" autoplay playsinline style="width:100%; border-radius:10px;"></video>
+          <canvas id="cameraCanvas" class="d-none"></canvas>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button id="captureBtn" class="btn btn-primary btn-sm">Capture</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Scripts -->
-    <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script>
-      const uploadForm = document.getElementById("uploadForm");
-      const fileInput = document.getElementById("fileInput");
-      const previewImg = document.getElementById("preview");
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-      let cameraStreamObj = null;
-      let scanner = null;
-      let imageCapture = null; // ImageCapture instance if available
-      let currentVideoTrack = null;
+  <!-- ✅ Replace jscanify with MediaPipe Document Scanner -->
+  <script type="module">
+    import { FilesetResolver, DocumentScanner } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
 
-      // Initialize jscanify
-      function initScanner() {
-        if (typeof jscanify === "undefined") {
-          setTimeout(initScanner, 100);
-          return;
-        }
-        scanner = new jscanify();
+    const uploadForm = document.getElementById("uploadForm");
+    const fileInput = document.getElementById("fileInput");
+    const previewImg = document.getElementById("preview");
+    const captureBtn = document.getElementById("captureBtn");
+
+    let cameraStreamObj = null;
+    let scanner = null;
+
+    // Initialize MediaPipe DocumentScanner
+    async function initScanner() {
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+      );
+      scanner = await DocumentScanner.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/document_scanner.task" },
+      });
+    }
+    initScanner();
+
+    async function processWithScanner(imageEl) {
+      if (!scanner) return imageEl;
+      try {
+        const result = await scanner.detect(imageEl);
+        if (result && result.croppedImage) return result.croppedImage;
+        return imageEl;
+      } catch (err) {
+        console.error("DocumentScanner failed:", err);
+        return imageEl;
       }
-      initScanner();
+    }
 
-      function openCameraModal() {
-        const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
-        cameraModal.show();
-        startCamera();
+    function openCameraModal() {
+      const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
+      cameraModal.show();
+      startCamera();
+    }
+
+    async function startCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      document.getElementById("cameraStream").srcObject = stream;
+      cameraStreamObj = stream;
+    }
+
+    async function captureImage() {
+      const video = document.getElementById("cameraStream");
+      const canvas = document.getElementById("cameraCanvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const processed = await processWithScanner(canvas);
+      const finalCanvas = processed instanceof HTMLCanvasElement ? processed : canvas;
+
+      const blob = await new Promise(res => finalCanvas.toBlob(res, "image/jpeg", 0.95));
+      const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
+
+      previewImg.src = URL.createObjectURL(file);
+
+      stopCameraTracks();
+      bootstrap.Modal.getInstance(document.getElementById("cameraModal")).hide();
+    }
+
+    captureBtn.addEventListener("click", captureImage);
+
+    function stopCameraTracks() {
+      if (cameraStreamObj) {
+        cameraStreamObj.getTracks().forEach(t => t.stop());
+        cameraStreamObj = null;
       }
+    }
 
-      // Start camera with high-resolution constraints and try to use ImageCapture for high-quality stills.
-      async function startCamera() {
-        try {
-          // Ask for a high-res stream (browser will pick best available)
-          const constraints = {
-            video: {
-              facingMode: { ideal: "environment" },
-              width: { ideal: 1920 },   // request Full HD
-              height: { ideal: 1080 },
-              frameRate: { ideal: 30 }
-            },
-            audio: false
-          };
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const img = new Image();
+      img.onload = async () => {
+        const resultCanvas = await processWithScanner(img);
+        const blob = await new Promise(res => resultCanvas.toBlob(res, 'image/jpeg', 0.95));
+        const finalFile = new File([blob], "upload.jpg", { type: "image/jpeg" });
+        const dt = new DataTransfer();
+        dt.items.add(finalFile);
+        fileInput.files = dt.files;
+        previewImg.src = URL.createObjectURL(finalFile);
+      };
+      img.src = URL.createObjectURL(file);
+    });
 
-          cameraStreamObj = await navigator.mediaDevices.getUserMedia(constraints);
-          const videoEl = document.getElementById("cameraStream");
-          videoEl.srcObject = cameraStreamObj;
+    uploadForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const file = fileInput.files[0];
+      if (!file) return alert("Please upload or capture an image first!");
 
-          // Try to increase resolution if possible via applyConstraints
-          const [track] = cameraStreamObj.getVideoTracks();
-          currentVideoTrack = track;
+      const formData = new FormData();
+      formData.append("file", file);
 
-          try {
-            // Try to request a larger ideal resolution (4K ideal, but it's only an attempt)
-            await track.applyConstraints({
-              advanced: [
-                { width: 3840, height: 2160, frameRate: 30 },
-                { width: 2560, height: 1440 }
-              ]
-            });
-          } catch (err) {
-            // Not fatal — browser/device may not support it; continue with available stream
-            // console.warn("applyConstraints not supported or couldn't be applied:", err);
-          }
-
-          // Create ImageCapture when available for higher-quality stills
-          if ('ImageCapture' in window && track) {
-            try {
-              imageCapture = new ImageCapture(track);
-            } catch (err) {
-              imageCapture = null;
-            }
-          } else {
-            imageCapture = null;
-          }
-        } catch (err) {
-          alert("Camera access denied or not available!");
-          console.error(err);
-        }
-      }
-
-      function processWithScanner(imgOrCanvas) {
-        if (!scanner) return imgOrCanvas;
-
-        try {
-          const w = imgOrCanvas.width || imgOrCanvas.videoWidth || imgOrCanvas.naturalWidth;
-          const h = imgOrCanvas.height || imgOrCanvas.videoHeight || imgOrCanvas.naturalHeight;
-          if (!w || !h) return imgOrCanvas;
-
-          // Perform cropping using jscanify
-          const resultCanvas = scanner.extractPaper(imgOrCanvas, w, h);
-
-          // --- Maintain original aspect ratio to avoid "slim" look ---
-          const desiredRatio = w / h;
-          const croppedRatio = resultCanvas.width / resultCanvas.height;
-
-          // If the aspect ratio deviates by >5%, correct it
-          if (Math.abs(desiredRatio - croppedRatio) > 0.05) {
-            const correctedCanvas = document.createElement("canvas");
-            const ctx = correctedCanvas.getContext("2d");
-
-            // Match aspect ratio by expanding the shorter side with white padding
-            if (croppedRatio > desiredRatio) {
-              // Cropped too wide → pad top & bottom
-              correctedCanvas.width = resultCanvas.width;
-              correctedCanvas.height = Math.round(resultCanvas.width / desiredRatio);
-            } else {
-              // Cropped too tall → pad left & right
-              correctedCanvas.height = resultCanvas.height;
-              correctedCanvas.width = Math.round(resultCanvas.height * desiredRatio);
-            }
-
-            ctx.fillStyle = "white";
-            ctx.fillRect(0, 0, correctedCanvas.width, correctedCanvas.height);
-
-            const offsetX = Math.floor((correctedCanvas.width - resultCanvas.width) / 2);
-            const offsetY = Math.floor((correctedCanvas.height - resultCanvas.height) / 2);
-
-            ctx.drawImage(resultCanvas, offsetX, offsetY, resultCanvas.width, resultCanvas.height);
-            return correctedCanvas;
-          }
-
-          return resultCanvas;
-        } catch (err) {
-          console.error("Scanner processing failed:", err);
-          return imgOrCanvas;
-        }
-      }
-
-
-      // Helper: convert Blob (photo) to Image object and return a Promise that resolves with the Image
-      function blobToImage(blob) {
-        return new Promise((resolve, reject) => {
-          const url = URL.createObjectURL(blob);
-          const img = new Image();
-          img.onload = () => {
-            URL.revokeObjectURL(url);
-            resolve(img);
-          };
-          img.onerror = (e) => {
-            URL.revokeObjectURL(url);
-            reject(e);
-          };
-          img.src = url;
+      try {
+        const sucCode = localStorage.getItem("sucCode") || "12346";
+        const examID = localStorage.getItem("examId") || "ew123";
+        const res = await fetch(`https://dsb744jt-8000.inc1.devtunnels.ms/process/${sucCode}/${examID}`, {
+          method: "POST",
+          body: formData
         });
+
+        if (!res.ok) throw new Error("Processing failed!");
+        const data = await res.json();
+        localStorage.setItem("omrResultData", JSON.stringify(data));
+        localStorage.setItem("sucCode", data.suc);
+        localStorage.setItem("examId", data.examID);
+        window.location.href = "result.html";
+      } catch (err) {
+        alert("Error: " + err.message);
+        console.error(err);
       }
-
-      // Stop camera tracks
-      function stopCameraTracks() {
-        try {
-          if (cameraStreamObj) {
-            cameraStreamObj.getTracks().forEach(t => t.stop());
-          } else if (currentVideoTrack) {
-            currentVideoTrack.stop();
-          }
-        } catch (err) {
-          // ignore
-        } finally {
-          cameraStreamObj = null;
-          currentVideoTrack = null;
-          imageCapture = null;
-        }
-      }
-
-      // Capture photo with ImageCapture if available, otherwise fallback to canvas draw.
-      document.getElementById("captureBtn").addEventListener("click", async () => {
-        const video = document.getElementById("cameraStream");
-        const canvas = document.getElementById("cameraCanvas");
-
-        try {
-          let photoBlob = null;
-          // Preferred: ImageCapture.takePhoto() or grabFrame() for best quality
-          if (imageCapture && typeof imageCapture.takePhoto === 'function') {
-            try {
-              photoBlob = await imageCapture.takePhoto(); // highest-quality still if supported
-            } catch (err) {
-              // some browsers don't implement takePhoto; try grabFrame next
-              console.warn("takePhoto failed or not supported:", err);
-              photoBlob = null;
-            }
-          }
-
-          if (!photoBlob && imageCapture && typeof imageCapture.grabFrame === 'function') {
-            try {
-              const frame = await imageCapture.grabFrame(); // returns ImageBitmap
-              // draw ImageBitmap to canvas
-              canvas.width = frame.width;
-              canvas.height = frame.height;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
-              // convert canvas to blob
-              photoBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.95));
-            } catch (err) {
-              console.warn("grabFrame failed:", err);
-              photoBlob = null;
-            }
-          }
-
-          // Fallback: draw current video frame to canvas at video dimensions
-          if (!photoBlob) {
-            // ensure video has dimensions
-            const vW = video.videoWidth || 1920;
-            const vH = video.videoHeight || 1080;
-            canvas.width = vW;
-            canvas.height = vH;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            photoBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.95));
-          }
-
-          if (!photoBlob) throw new Error("Unable to capture photo");
-
-          // Convert blob to Image so scanner can work with it (scanner.extractPaper accepts Image or canvas)
-          const img = await blobToImage(photoBlob);
-
-          // Ensure scanner initialized, otherwise use the raw image
-          const processedCanvas = processWithScanner(img);
-
-          // Convert processedCanvas (or img if scanner unavailable) to blob for upload and preview
-          // If processWithScanner returned an element that is not a canvas (rare), draw it onto our canvas
-          let finalBlob = null;
-          if (processedCanvas instanceof HTMLCanvasElement) {
-            finalBlob = await new Promise(res => processedCanvas.toBlob(res, 'image/jpeg', 0.95));
-          } else {
-            // Draw the image into the cameraCanvas to produce a blob
-            const outCanvas = document.getElementById('cameraCanvas');
-            outCanvas.width = processedCanvas.width || processedCanvas.naturalWidth || video.videoWidth;
-            outCanvas.height = processedCanvas.height || processedCanvas.naturalHeight || video.videoHeight;
-            const outCtx = outCanvas.getContext('2d');
-            outCtx.drawImage(processedCanvas, 0, 0, outCanvas.width, outCanvas.height);
-            finalBlob = await new Promise(res => outCanvas.toBlob(res, 'image/jpeg', 0.95));
-          }
-
-          if (!finalBlob) throw new Error("Failed to prepare final image");
-
-          // Build a File and attach to file input (keeps existing upload flow & APIs unchanged)
-          const finalFile = new File([finalBlob], "capture.jpg", { type: "image/jpeg" });
-          const dt = new DataTransfer();
-          dt.items.add(finalFile);
-          fileInput.files = dt.files;
-
-          // Update preview
-          previewImg.src = URL.createObjectURL(finalFile);
-
-        } catch (err) {
-          console.error("Capture error:", err);
-          alert("Capture failed: " + (err.message || err));
-        } finally {
-          // stop camera and hide modal
-          stopCameraTracks();
-          const modalEl = document.getElementById('cameraModal');
-          try {
-            const inst = bootstrap.Modal.getInstance(modalEl);
-            if (inst) inst.hide();
-          } catch (e) { /* ignore */ }
-        }
-      });
-
-      // File input preview & auto crop (keeps same behaviour)
-      fileInput.addEventListener("change", () => {
-        const file = fileInput.files[0];
-        if (!file) return;
-        const img = new Image();
-        img.onload = function () {
-          try {
-            const resultCanvas = processWithScanner(img);
-            resultCanvas.toBlob(blob => {
-              const file = new File([blob], "upload.jpg", { type: "image/jpeg" });
-              const dt = new DataTransfer();
-              dt.items.add(file);
-              fileInput.files = dt.files;
-              previewImg.src = URL.createObjectURL(file);
-            }, 'image/jpeg', 0.95);
-          } catch (err) {
-            // fallback: direct preview
-            previewImg.src = URL.createObjectURL(file);
-          }
-        };
-        img.src = URL.createObjectURL(file);
-      });
-
-      // Upload form (unchanged - same API)
-      uploadForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const file = fileInput.files[0];
-        if (!file) return alert("Please upload or capture an image first!");
-
-        const formData = new FormData();
-        formData.append("file", file);
-
-        try {
-          const sucCode = localStorage.getItem("sucCode") || "12346";
-          const examID = localStorage.getItem("examId") || "ew123";
-
-          const res = await fetch(`https://dsb744jt-8000.inc1.devtunnels.ms/process/${sucCode}/${examID}`, {
-            method: "POST",
-            body: formData
-          });
-
-          if (!res.ok) throw new Error("Processing failed!");
-          const data = await res.json();
-
-          localStorage.setItem("omrResultData", JSON.stringify(data));
-          localStorage.setItem("sucCode", data.suc);
-          localStorage.setItem("examId", data.examID);
-
-          window.location.href = "result.html";
-        } catch (err) {
-          alert("Error: " + err.message);
-          console.error(err);
-        }
-      });
-    </script>
+    });
+  </script>
 </body>
 
 </html>
