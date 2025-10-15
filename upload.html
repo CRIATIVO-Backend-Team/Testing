@@ -167,14 +167,21 @@
       }
     }
 
-    captureBtn.addEventListener("click", () => {
+    captureBtn.addEventListener("click", async () => {
       const video = document.getElementById("cameraStream");
+      if (!video.videoWidth || !video.videoHeight) {
+        await new Promise(resolve => {
+          video.onloadedmetadata = () => resolve();
+        });
+      }
+
       const canvas = document.getElementById("cameraCanvas");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+      // Process with PhotoScan
       processWithPhotoScan(canvas, resultCanvas => {
         resultCanvas.toBlob(blob => {
           const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
@@ -183,11 +190,13 @@
           fileInput.files = dt.files;
           previewImg.src = URL.createObjectURL(file);
         }, "image/jpeg", 0.95);
-      });
 
-      stopCameraTracks();
-      bootstrap.Modal.getInstance(document.getElementById('cameraModal')).hide();
+        stopCameraTracks();
+        const modal = bootstrap.Modal.getInstance(document.getElementById('cameraModal'));
+        if (modal) modal.hide();
+      });
     });
+
 
     function stopCameraTracks() {
       if (cameraStreamObj) {
