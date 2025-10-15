@@ -276,22 +276,53 @@
       }
 
       function processWithScanner(imgOrCanvas) {
-        // jscanify expects an element (image or canvas). We try to pass it as-is.
         if (!scanner) return imgOrCanvas;
-        // Some devices / returns may have zero width/height briefly — guard against it by ensuring
-        // the element has natural width/height. If it's zero, return original element.
+
         try {
           const w = imgOrCanvas.width || imgOrCanvas.videoWidth || imgOrCanvas.naturalWidth;
           const h = imgOrCanvas.height || imgOrCanvas.videoHeight || imgOrCanvas.naturalHeight;
           if (!w || !h) return imgOrCanvas;
-          // Pass required width & height when calling extractPaper to get proper cropping
+
+          // Perform cropping using jscanify
           const resultCanvas = scanner.extractPaper(imgOrCanvas, w, h);
+
+          // --- Maintain original aspect ratio to avoid "slim" look ---
+          const desiredRatio = w / h;
+          const croppedRatio = resultCanvas.width / resultCanvas.height;
+
+          // If the aspect ratio deviates by >5%, correct it
+          if (Math.abs(desiredRatio - croppedRatio) > 0.05) {
+            const correctedCanvas = document.createElement("canvas");
+            const ctx = correctedCanvas.getContext("2d");
+
+            // Match aspect ratio by expanding the shorter side with white padding
+            if (croppedRatio > desiredRatio) {
+              // Cropped too wide → pad top & bottom
+              correctedCanvas.width = resultCanvas.width;
+              correctedCanvas.height = Math.round(resultCanvas.width / desiredRatio);
+            } else {
+              // Cropped too tall → pad left & right
+              correctedCanvas.height = resultCanvas.height;
+              correctedCanvas.width = Math.round(resultCanvas.height * desiredRatio);
+            }
+
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, correctedCanvas.width, correctedCanvas.height);
+
+            const offsetX = Math.floor((correctedCanvas.width - resultCanvas.width) / 2);
+            const offsetY = Math.floor((correctedCanvas.height - resultCanvas.height) / 2);
+
+            ctx.drawImage(resultCanvas, offsetX, offsetY, resultCanvas.width, resultCanvas.height);
+            return correctedCanvas;
+          }
+
           return resultCanvas;
         } catch (err) {
           console.error("Scanner processing failed:", err);
           return imgOrCanvas;
         }
       }
+
 
       // Helper: convert Blob (photo) to Image object and return a Promise that resolves with the Image
       function blobToImage(blob) {
