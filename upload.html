@@ -26,7 +26,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
-
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   <style>
@@ -127,7 +126,6 @@
   <div class="container py-4">
     <div class="d-flex justify-content-between pagetitle align-items-center">
       <h1 class="text-start fs-4">
-        <!-- <i class="bi bi-file-earmark-text-fill text-secondary"></i> -->
         OMR Sheet Processor
       </h1>
 
@@ -195,10 +193,7 @@
 
     <!-- Scripts -->
     <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <!-- Remove jscanify, keep only OpenCV.js -->
     <script src="https://docs.opencv.org/4.7.0/opencv.js" async></script>
-
-    <!-- Replace jscanify with OpenCV.js -->
 
     <script>
       const uploadForm = document.getElementById("uploadForm");
@@ -217,7 +212,7 @@
           cameraStreamObj = await navigator.mediaDevices.getUserMedia({
             video: {
               facingMode: "environment",
-              width: { ideal: 1920 },   // request 1080p or higher
+              width: { ideal: 1920 },
               height: { ideal: 1080 }
             }
           });
@@ -227,7 +222,6 @@
           console.error(err);
         }
       }
-
 
       // Document scanning using OpenCV.js
       function scanDocument(imgElement) {
@@ -253,7 +247,7 @@
           const approx = new cv.Mat();
           cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
 
-          if (approx.rows >= 4) { // accept more than 4 points for convex hull
+          if (approx.rows >= 4) {
             const hull = new cv.Mat();
             cv.convexHull(approx, hull, false, true);
             const area = cv.contourArea(hull);
@@ -267,27 +261,47 @@
           cnt.delete();
         }
 
+        let dst;
         if (docContour) {
-          // Use bounding rect if convex hull has more than 4 points
           const rect = cv.boundingRect(docContour);
-          const dst = new cv.Mat();
+          dst = new cv.Mat();
           const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
             rect.x, rect.y,
             rect.x + rect.width, rect.y,
             rect.x + rect.width, rect.y + rect.height,
             rect.x, rect.y + rect.height
           ]);
-          const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, rect.width - 1, 0, rect.width - 1, rect.height - 1, 0, rect.height - 1]);
+          const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+            0, 0,
+            rect.width - 1, 0,
+            rect.width - 1, rect.height - 1,
+            0, rect.height - 1
+          ]);
 
           const M = cv.getPerspectiveTransform(srcTri, dstTri);
           cv.warpPerspective(src, dst, M, new cv.Size(rect.width, rect.height));
 
-          src.delete(); gray.delete(); blurred.delete(); edges.delete(); contours.delete(); hierarchy.delete(); docContour.delete(); srcTri.delete(); dstTri.delete(); M.delete();
-          return dst;
+          srcTri.delete(); dstTri.delete(); M.delete();
+          docContour.delete();
         } else {
-          src.delete(); gray.delete(); blurred.delete(); edges.delete(); contours.delete(); hierarchy.delete();
-          return cv.imread(imgElement);
+          dst = src.clone();
         }
+
+        src.delete(); gray.delete(); blurred.delete(); edges.delete(); contours.delete(); hierarchy.delete();
+        return dst;
+      }
+
+      // Enhance image (sharpen)
+      function enhanceImage(mat) {
+        let dst = new cv.Mat();
+        let kernel = cv.matFromArray(3, 3, cv.CV_32F, [
+          0, -1, 0,
+          -1, 5, -1,
+          0, -1, 0
+        ]);
+        cv.filter2D(mat, dst, cv.CV_8U, kernel);
+        kernel.delete();
+        return dst;
       }
 
       // Capture photo
@@ -299,9 +313,11 @@
         const ctx = canvas.getContext("2d");
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+        let resultMat = scanDocument(canvas);
+        let enhancedMat = enhanceImage(resultMat);
+        resultMat.delete();
 
-        const resultMat = scanDocument(canvas);
-        cv.imshow(canvas, resultMat);
+        cv.imshow(canvas, enhancedMat);
 
         canvas.toBlob(blob => {
           const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
@@ -311,7 +327,7 @@
           previewImg.src = URL.createObjectURL(file);
         });
 
-        resultMat.delete();
+        enhancedMat.delete();
         cameraStreamObj.getTracks().forEach(track => track.stop());
         bootstrap.Modal.getInstance(document.getElementById('cameraModal')).hide();
       });
@@ -327,8 +343,12 @@
           canvas.height = img.height;
           const ctx = canvas.getContext("2d");
           ctx.drawImage(img, 0, 0);
-          const resultMat = scanDocument(canvas);
-          cv.imshow(canvas, resultMat);
+
+          let resultMat = scanDocument(canvas);
+          let enhancedMat = enhanceImage(resultMat);
+          resultMat.delete();
+
+          cv.imshow(canvas, enhancedMat);
 
           canvas.toBlob(blob => {
             const file = new File([blob], "upload.jpg", { type: "image/jpeg" });
@@ -337,12 +357,13 @@
             fileInput.files = dt.files;
             previewImg.src = URL.createObjectURL(file);
           });
-          resultMat.delete();
+
+          enhancedMat.delete();
         };
         img.src = URL.createObjectURL(file);
       });
 
-      // Upload form remains unchanged
+      // Upload form
       uploadForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const file = fileInput.files[0];
@@ -374,8 +395,6 @@
         }
       });
     </script>
-
-
 </body>
 
 </html>
