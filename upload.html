@@ -17,15 +17,15 @@
 
   <!-- Google Fonts -->
   <link href="https://fonts.gstatic.com" rel="preconnect">
-  <link href="https://fonts.googleapis.com/css?family=Nunito:400,600,700|Poppins:400,600,700" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i"
+    rel="stylesheet">
 
   <!-- AngularJS + PDF.js + QR -->
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
-  <!-- ✅ PhotoScan.js -->
-  <script src="https://cdn.jsdelivr.net/gh/ailon/photoscan.js/dist/photoscan.min.js"></script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -66,15 +66,75 @@
       background: #fff;
       margin-bottom: 1rem;
     }
+
+    .btn-sm-custom {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 0.4rem 0.6rem;
+    }
+
+    /* Floating QR Button */
+    .footer-qr {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 60px;
+      background: #f9fcff;
+      border: 1px solid #dee2e6;
+      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 1000;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .footer-qr:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Responsive spacing */
+    @media (max-width: 768px) {
+      .d-flex.gap-3>div {
+        flex: 1;
+      }
+
+      .row.g-3>.col-md-6 {
+        flex: 1 1 100%;
+      }
+    }
+
+    /* Mobile Camera Fullscreen */
+    @media (max-width: 576px) {
+      #cameraStream {
+        width: 100vw !important;
+        height: auto !important;
+      }
+    }
   </style>
 </head>
 
 <body>
   <div class="container py-4">
     <div class="d-flex justify-content-between pagetitle align-items-center">
-      <h1 class="text-start fs-4">OMR Sheet Processor</h1>
+      <h1 class="text-start fs-4">
+        <!-- <i class="bi bi-file-earmark-text-fill text-secondary"></i> -->
+        OMR Sheet Processor
+      </h1>
+
       <div class="text-end">
-        <button class="btn btn-primary btn-sm">Next</button>
+        <button class="btn btn-primary btn-sm">
+          Next
+        </button>
       </div>
     </div>
 
@@ -82,6 +142,7 @@
       <form id="uploadForm" class="p-1">
         <h6 class="text-dark card-title mb-3 mt-3">Upload Key Sheet</h6>
 
+        <!-- Dashed Upload Box -->
         <div class="rounded-3 d-flex flex-column align-items-center justify-content-center p-4 bg-light"
           style="min-height: 120px; cursor: pointer; border:1px dashed #dee2e6"
           onclick="document.getElementById('fileInput').click();">
@@ -89,6 +150,7 @@
           <p class="text-muted mb-0" style="font-size: 13px;">Click to upload image</p>
         </div>
 
+        <!-- Upload & Camera Buttons -->
         <div class="d-flex gap-2 mt-3">
           <button class="btn btn-outline-primary btn-sm flex-grow-1" type="submit">Upload</button>
           <button type="button" class="btn btn-light text-primary btn-flex" style="flex:0 0 50px;"
@@ -101,6 +163,7 @@
       </form>
     </div>
 
+    <!-- Preview -->
     <div class="row g-3">
       <div class="col-md-12 panel">
         <div class="card card-custom p-3 text-center mb-3">
@@ -109,147 +172,192 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Camera Modal -->
-  <div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content p-3">
-        <div class="modal-header">
-          <h6 class="modal-title">Capture Image</h6>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body text-center">
-          <video id="cameraStream" autoplay playsinline style="width:100%; border-radius:10px;"></video>
-          <canvas id="cameraCanvas" class="d-none"></canvas>
-        </div>
-        <div class="modal-footer d-flex justify-content-between">
-          <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-          <button id="captureBtn" class="btn btn-primary btn-sm">Capture</button>
+    <!-- Camera Modal -->
+    <div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-3">
+          <div class="modal-header">
+            <h6 class="modal-title">Capture Image</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-center">
+            <video id="cameraStream" autoplay playsinline style="width:100%; border-radius:10px;"></video>
+            <canvas id="cameraCanvas" class="d-none"></canvas>
+          </div>
+          <div class="modal-footer d-flex justify-content-between">
+            <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button id="captureBtn" class="btn btn-primary btn-sm">Capture</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- Scripts -->
+    <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- Remove jscanify, keep only OpenCV.js -->
+    <script src="https://docs.opencv.org/4.7.0/opencv.js" async></script>
 
-  <script>
-    const uploadForm = document.getElementById("uploadForm");
-    const fileInput = document.getElementById("fileInput");
-    const previewImg = document.getElementById("preview");
-    const captureBtn = document.getElementById("captureBtn");
-    let cameraStreamObj = null;
+    <script>
+      const uploadForm = document.getElementById("uploadForm");
+      const fileInput = document.getElementById("fileInput");
+      const previewImg = document.getElementById("preview");
+      let cameraStreamObj = null;
 
-    // Initialize PhotoScan
-    function processWithPhotoScan(imageEl, callback) {
-      const scanner = new PhotoScan({
-        onComplete: result => {
-          const croppedCanvas = result.image;
-          callback(croppedCanvas);
-        },
-        onError: () => callback(imageEl)
-      });
-      scanner.process(imageEl);
-    }
-
-    function openCameraModal() {
-      const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
-      cameraModal.show();
-      startCamera();
-    }
-
-    async function startCamera() {
-      try {
-        cameraStreamObj = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        document.getElementById("cameraStream").srcObject = cameraStreamObj;
-      } catch (err) {
-        alert("Camera access denied or not available!");
-      }
-    }
-
-    captureBtn.addEventListener("click", async () => {
-      const video = document.getElementById("cameraStream");
-      if (!video.videoWidth || !video.videoHeight) {
-        await new Promise(resolve => {
-          video.onloadedmetadata = () => resolve();
-        });
+      function openCameraModal() {
+        const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
+        cameraModal.show();
+        startCamera();
       }
 
-      const canvas = document.getElementById("cameraCanvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      async function startCamera() {
+        try {
+          cameraStreamObj = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          document.getElementById("cameraStream").srcObject = cameraStreamObj;
+        } catch (err) {
+          alert("Camera access denied or not available!");
+          console.error(err);
+        }
+      }
 
-      // Process with PhotoScan
-      processWithPhotoScan(canvas, resultCanvas => {
+      // Document detection and perspective correction using OpenCV.js
+      function processWithOpenCV(imgElement) {
+        if (typeof cv === "undefined") {
+          alert("OpenCV not loaded yet!");
+          return imgElement;
+        }
+
+        // Create canvas for output
+        const canvas = document.createElement("canvas");
+        canvas.width = imgElement.width;
+        canvas.height = imgElement.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+
+        let src = cv.imread(canvas);
+        let dst = new cv.Mat();
+        let gray = new cv.Mat();
+        let blur = new cv.Mat();
+        let edges = new cv.Mat();
+
+        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+        cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
+        cv.Canny(blur, edges, 75, 200);
+
+        // Find contours
+        let contours = new cv.MatVector();
+        let hierarchy = new cv.Mat();
+        cv.findContours(edges, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+
+        let maxArea = 0;
+        let docCnt = null;
+
+        for (let i = 0; i < contours.size(); ++i) {
+          let cnt = contours.get(i);
+          let area = cv.contourArea(cnt);
+          if (area > maxArea) {
+            let peri = cv.arcLength(cnt, true);
+            let approx = new cv.Mat();
+            cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
+            if (approx.rows === 4) {
+              docCnt = approx;
+              maxArea = area;
+            } else approx.delete();
+          }
+          cnt.delete();
+        }
+
+        if (docCnt) {
+          let pts = [];
+          for (let i = 0; i < 4; i++) {
+            pts.push({ x: docCnt.intAt(i, 0), y: docCnt.intAt(i, 1) });
+          }
+
+          // Order points (top-left, top-right, bottom-right, bottom-left)
+          pts.sort((a, b) => a.y - b.y);
+          let top = pts.slice(0, 2).sort((a, b) => a.x - b.x);
+          let bottom = pts.slice(2, 4).sort((a, b) => a.x - b.x);
+          let ordered = [top[0], top[1], bottom[1], bottom[0]];
+
+          let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+            ordered[0].x, ordered[0].y,
+            ordered[1].x, ordered[1].y,
+            ordered[2].x, ordered[2].y,
+            ordered[3].x, ordered[3].y
+          ]);
+
+          let widthA = Math.hypot(ordered[2].x - ordered[3].x, ordered[2].y - ordered[3].y);
+          let widthB = Math.hypot(ordered[1].x - ordered[0].x, ordered[1].y - ordered[0].y);
+          let maxWidth = Math.max(widthA, widthB);
+
+          let heightA = Math.hypot(ordered[1].x - ordered[2].x, ordered[1].y - ordered[2].y);
+          let heightB = Math.hypot(ordered[0].x - ordered[3].x, ordered[0].y - ordered[3].y);
+          let maxHeight = Math.max(heightA, heightB);
+
+          let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+            0, 0,
+            maxWidth - 1, 0,
+            maxWidth - 1, maxHeight - 1,
+            0, maxHeight - 1
+          ]);
+
+          let M = cv.getPerspectiveTransform(srcTri, dstTri);
+          cv.warpPerspective(src, dst, M, new cv.Size(maxWidth, maxHeight));
+
+          cv.imshow(canvas, dst);
+
+          // Clean up
+          src.delete(); dst.delete(); gray.delete(); blur.delete(); edges.delete(); contours.delete(); hierarchy.delete(); docCnt.delete(); M.delete(); srcTri.delete(); dstTri.delete();
+
+          return canvas;
+        }
+
+        // If no document found, return original
+        src.delete(); dst.delete(); gray.delete(); blur.delete(); edges.delete(); contours.delete(); hierarchy.delete();
+        return imgElement;
+      }
+
+      // Capture photo
+      document.getElementById("captureBtn").addEventListener("click", () => {
+        const video = document.getElementById("cameraStream");
+        const canvas = document.getElementById("cameraCanvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const resultCanvas = processWithOpenCV(canvas);
         resultCanvas.toBlob(blob => {
           const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
           const dt = new DataTransfer();
           dt.items.add(file);
           fileInput.files = dt.files;
           previewImg.src = URL.createObjectURL(file);
-        }, "image/jpeg", 0.95);
+        });
 
-        stopCameraTracks();
-        const modal = bootstrap.Modal.getInstance(document.getElementById('cameraModal'));
-        if (modal) modal.hide();
-      });
-    });
-
-
-    function stopCameraTracks() {
-      if (cameraStreamObj) {
         cameraStreamObj.getTracks().forEach(track => track.stop());
-        cameraStreamObj = null;
-      }
-    }
+        bootstrap.Modal.getInstance(document.getElementById('cameraModal')).hide();
+      });
 
-    fileInput.addEventListener("change", () => {
-      const file = fileInput.files[0];
-      if (!file) return;
-      const img = new Image();
-      img.onload = function () {
-        processWithPhotoScan(img, resultCanvas => {
+      // File input preview & auto crop
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const img = new Image();
+        img.onload = function () {
+          const resultCanvas = processWithOpenCV(img);
           resultCanvas.toBlob(blob => {
             const file = new File([blob], "upload.jpg", { type: "image/jpeg" });
             const dt = new DataTransfer();
             dt.items.add(file);
             fileInput.files = dt.files;
             previewImg.src = URL.createObjectURL(file);
-          }, "image/jpeg", 0.95);
-        });
-      };
-      img.src = URL.createObjectURL(file);
-    });
+          });
+        };
+        img.src = URL.createObjectURL(file);
+      });
+    </script>
 
-    uploadForm.addEventListener("submit", async e => {
-      e.preventDefault();
-      const file = fileInput.files[0];
-      if (!file) return alert("Please upload or capture an image first!");
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        const sucCode = localStorage.getItem("sucCode") || "12346";
-        const examID = localStorage.getItem("examId") || "ew123";
-        const res = await fetch(`https://dsb744jt-8000.inc1.devtunnels.ms/process/${sucCode}/${examID}`, {
-          method: "POST",
-          body: formData
-        });
-
-        if (!res.ok) throw new Error("Processing failed!");
-        const data = await res.json();
-        localStorage.setItem("omrResultData", JSON.stringify(data));
-        localStorage.setItem("sucCode", data.suc);
-        localStorage.setItem("examId", data.examID);
-        window.location.href = "result.html";
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    });
-  </script>
 </body>
 
 </html>
